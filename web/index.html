@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Messenger</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/chats.css">
+    <link rel="stylesheet" href="css/contacts.css">
+    <link rel="stylesheet" href="css/context-menu.css">
+    <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="css/profile-edit.css">
+    <link rel="stylesheet" href="css/search.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="left-container"></div>
+        <!-- dynamic -->
+        <div class="right-container"></div>
+    </div>
+    <!-- services -->
+    <script src="js/api/mock-data-service.js"></script>
+    <script src="js/event-bus.js"></script>
+    <!-- panel managers -->
+    <script src="js/left-panel-manager.js"></script>
+    <script src="js/right-panel-manager.js"></script>
+    <!-- left panel -->
+    <script src="js/components/chat-list.js"></script>
+    <script src="js/components/profile.js"></script>
+    <script src="js/components/search.js"></script>
+    <script src="js/components/profile-edit.js"></script>
+    <script src="js/components/contacts.js"></script> 
+    <!-- right panel -->
+    <script src="js/components/chat.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new App();
+            window.app.init();
+        });
+    </script>
+</body>
+</html>

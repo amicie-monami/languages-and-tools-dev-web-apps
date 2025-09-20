@@ -1,0 +1,103 @@
+/* contacts.css */
+.contacts-list-section {
+    padding: 0 20px 20px;
+    border-top: 1px solid #333;
+    margin-top: 20px;
+}
+
+.contacts-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.contacts-list-header h3 {
+    font-size: 16px;
+    color: #007bff;
+}
+
+.contacts-count {
+    background: #333;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 5px;
+}
+
+.contact-item:hover {
+    background: #333;
+}
+
+.contact-avatar {
+    position: relative;
+    margin-right: 12px;
+}
+
+.contact-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: #28a745;
+    border: 2px solid #1e1e1e;
+    border-radius: 50%;
+}
+
+.contact-info {
+    flex: 1;
+}
+
+.contact-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.contact-username {
+    font-size: 12px;
+    color: #888;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.message-contact-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.message-contact-btn:hover {
+    background: #444;
+}
+
+.no-contacts {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+    font-style: italic;
+}

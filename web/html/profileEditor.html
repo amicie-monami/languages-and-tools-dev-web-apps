@@ -1,0 +1,41 @@
+<div class="profile-edit-header">
+    <button class="cancel-button">Назад</button>
+    <h2>Редактирование профиля</h2>
+    <button class="save-button" disabled>Сохранить</button>
+</div>
+
+<form class="profile-edit-form">
+    <div class="form-group">
+        <label for="edit-avatar">Аватар</label>
+        <div class="avatar-upload">
+            <img class="avatar-preview" src="" alt="Предпросмотр">
+            <input type="file" id="edit-avatar" accept="image/*" style="display: none;">
+            <button type="button" class="upload-button">Выбрать файл</button>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="edit-name">Имя</label>
+        <input type="text" id="edit-name" maxlength="50" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="edit-username">Username</label>
+        <input type="text" id="edit-username" maxlength="30" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="edit-bio">О себе</label>
+        <textarea id="edit-bio" maxlength="200" rows="3"></textarea>
+    </div>
+    
+    <div class="form-group">
+        <label for="edit-phone">Телефон</label>
+        <input type="tel" id="edit-phone">
+    </div>
+    
+    <div class="form-group">
+        <label for="edit-email">Email</label>
+        <input type="email" id="edit-email">
+    </div>
+</form>

@@ -1,0 +1,25 @@
+<!-- html/chat.html -->
+<div class="chat-header">
+    <div class="chat-user-info">
+        <img class="chat-user-avatar" src="assets/placeholder.png" alt="User Avatar">
+        <div class="chat-user-details">
+            <div class="chat-user-name">Выберите чат</div>
+            <div class="chat-user-status">Офлайн</div>
+        </div>
+    </div>
+</div>
+<div class="messages-container">
+    <div class="messages-list" id="messages-list">
+        <!-- dynamic data -->
+    </div>
+</div>
+<div class="chat-input-container">
+    <input 
+        type="text" 
+        class="message-input" 
+        id="message-input" 
+        placeholder="Написать сообщение..."
+        maxlength="1000"
+    >
+    <button class="send-button" id="send-button" disabled>➤</button>
+</div>

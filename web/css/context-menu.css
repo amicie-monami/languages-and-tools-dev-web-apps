@@ -1,0 +1,44 @@
+/* context-menu.css */
+.chat-context-menu {
+    position: absolute;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    min-width: 180px;
+    padding: 4px 0;
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #fff;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: #3a3a3a;
+}
+
+.context-menu-item.danger {
+    color: #dc3545;
+}
+
+.context-menu-item.danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background-color: #444;
+    margin: 4px 0;
+}
+
+/* предотвращаем выделение текста */
+.chat-context-menu {
+    user-select: none;
+    -webkit-user-select: none;
+}
