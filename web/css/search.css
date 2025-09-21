@@ -1,6 +1,209 @@
+/* Обновленные стили для search.css */
+
+/* Анимации */
+@keyframes slideInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Загрузка */
+.search-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #333;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+/* Пустое состояние */
+.search-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.search-empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.search-empty h3 {
+    color: #ccc;
+    margin-bottom: 8px;
+}
+
+.search-tips,
+.search-suggestions {
+    margin-top: 24px;
+    text-align: left;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.search-tips h4,
+.search-suggestions h4 {
+    color: #007bff;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.search-tips ul,
+.search-suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.search-tips li,
+.search-suggestions li {
+    padding: 4px 0;
+    font-size: 14px;
+    color: #aaa;
+}
+
+.search-tips li::before,
+.search-suggestions li::before {
+    content: "•";
+    color: #007bff;
+    margin-right: 8px;
+}
+
+/* Нет результатов */
+.search-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+.search-no-results .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.search-no-results h3 {
+    color: #ccc;
+    margin-bottom: 8px;
+}
+
+.search-no-results strong {
+    color: #007bff;
+}
+
+/* Результаты поиска */
+.search-results-header h3 {
+    font-size: 16px;
+    color: #007bff;
+    margin: 0 0 4px 0;
+}
+
+.search-results-header p {
+    font-size: 14px;
+    color: #888;
+    margin: 0;
+}
+
+/* Улучшенные элементы результатов */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.search-result-item:hover {
+    background-color: #333;
+    border-color: #007bff;
+    transform: translateX(4px);
+}
+
+.search-result-item:active {
+    transform: translateX(2px);
+    background-color: #444;
+}
+
+/* Статус пользователя */
+.user-actions {
+    display: flex;
+    align-items: center;
+}
+
+.user-status {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.user-status.online {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.user-status.offline {
+    background: rgba(136, 136, 136, 0.2);
+    color: #888;
+}
+
+/* Подсветка поиска */
+mark {
+    background: rgba(0, 123, 255, 0.3);
+    color: #fff;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* Улучшенная биография */
+.user-bio {
+    color: #aaa;
+    font-size: 12px;
+    line-height: 1.3;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Онлайн индикатор */
+.online-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: #28a745;
+    border: 2px solid #1e1e1e;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px #1e1e1e;
+}
+
+/* Улучшенный header поиска */
 .search-header {
     padding: 15px 20px;
     border-bottom: 1px solid #333;
+    background: #1e1e1e;
 }
 
 .search-input {
@@ -12,80 +215,31 @@
     color: #fff;
     font-size: 14px;
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .search-input:focus {
     border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.search-results {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 20px;
+.search-input::placeholder {
+    color: #666;
 }
 
-.search-result-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-radius: 12px;
+/* Кнопка назад */
+.back-button {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 18px;
     cursor: pointer;
-    margin-bottom: 8px;
-    transition: background-color 0.2s;
-}
-
-.search-result-item:hover {
-    background-color: #333;
-}
-
-.user-avatar {
-    position: relative;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
     margin-right: 12px;
 }
 
-.user-avatar img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-}
-
-.online-indicator {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    background: #28a745;
-    border: 2px solid #1e1e1e;
-    border-radius: 50%;
-}
-
-.user-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.user-name {
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-
-.user-username {
-    color: #007bff;
-    font-size: 14px;
-    margin-bottom: 2px;
-}
-
-.user-bio {
-    color: #888;
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.no-results {
-    text-align: center;
-    color: #888;
-    padding: 40px 20px;
+.back-button:hover {
+    background: rgba(0, 123, 255, 0.1);
 }

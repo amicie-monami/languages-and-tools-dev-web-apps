@@ -41,12 +41,14 @@
 .contact-avatar {
     position: relative;
     margin-right: 12px;
+
 }
 
 .contact-avatar img {
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    object-fit: cover;
 }
 
 .contact-info {

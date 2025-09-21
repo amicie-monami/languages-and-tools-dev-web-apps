@@ -1,12 +1,18 @@
 class ChatsList {
-    constructor(eventBus) {
+    constructor(eventBus, apiService, userService) {
         this.eventBus = eventBus;
         this.container = null;
-        this.dataLoader = new ChatsListDataLoader();
-        this.renderer = new ChatsListRenderer();
+        this.apiService = apiService
+        this.userService = userService;
+        
+        this.dataLoader = new ChatsListDataLoader(apiService);
+        this.renderer = new ChatsListRenderer(apiService);
+        
+        this.usersStatus = {};
         this.chats = [];
+        
         this.instanceId = Date.now() + Math.random();
-        this.boundHandlers = {}; // ВАЖНО: инициализируем сразу
+        this.boundHandlers = {}; 
         this.isProcessingClick = false;
         console.log("ChatsList instance created:", this.instanceId);
     }
@@ -16,31 +22,34 @@ class ChatsList {
         await this.loadData();
         this.render();
         this.setupEvents();
-        console.log("chatsList.init()")
+        this.subscribeToUserUpdates();
+        console.log("[ChatsList] init()");
     }
 
     async loadData() {
         try {
             this.chats = await this.dataLoader.getAll();
+            const userIds = this.chats.map(chat => chat.userId);
+            await this.userService.loadUsers(userIds);
+            
         } catch (error) {
             console.error('Chats loading error:', error);
             this.chats = [];
         }
     }
 
-	render() {
+    render() {
         console.log(`[${this.instanceId}] ChatsList: render()`);
         this.updateProfileAvatar();
-        this.renderer.render(this.chats, this.container);
+        this.renderer.render(this.chats, this.container, this.userService);
     }
 
     setupEvents() {
         console.log(`[${this.instanceId}] ChatsList: setupEvents()`);
         
-        // СНАЧАЛА удаляем старые
-        this.removeEventListeners();
-        
-        // Создаем новые bound функции
+        // удаляем старые
+        this.removeEventListeners();        
+        // создаем новые bound функции
         this.boundHandlers = {
             documentClickHandler: (event) => {
                 this.hideContextMenu();
@@ -61,6 +70,13 @@ class ChatsList {
                     return;
                 }
 
+				if (event.target.classList.contains('search-input')) {
+					if (window.app.leftPanel.getCurrentComponentName() !== 'search') {
+						window.app.leftPanel.loadComponent('search');
+					}
+					return;
+				}
+
                 const chatItem = event.target.closest('.chat-item');
                 if (chatItem) {
                     this.isProcessingClick = true;
@@ -79,12 +95,10 @@ class ChatsList {
                         });
                     }
 
-                    // Отмечаем как прочитанный
-                    window.mockDataService.markChatAsRead(chatId);
-
+                    
                     setTimeout(async () => {
                         await this.refresh()
-                        this.setActiveChat(chatId)
+                        await this.setActiveChat(chatId)
                     }, 0);
 
                     setTimeout(() => {
@@ -118,7 +132,8 @@ class ChatsList {
         console.log(`[${this.instanceId}] Event listeners added`);
     }
 
-    setActiveChat(chatId) {
+    async setActiveChat(chatId) {
+        await this.apiService.markChatAsRead(chatId)
         // Убираем активный класс у всех чатов
         const allChatItems = this.container.querySelectorAll('.chat-item');
         allChatItems.forEach(item => item.classList.remove('active'));
@@ -140,9 +155,11 @@ class ChatsList {
                 senderId: message.senderId,
                 isRead: true
             };
-            
             // Перерисовываем только этот элемент
             this.updateChatItemInDOM(chatId);
+        } else {
+            console.log(`[${this.instanceId}] Chat ${chatId} not found, refreshing list`);
+            this.refresh();
         }
     }
 
@@ -151,80 +168,12 @@ class ChatsList {
         if (chatElement) {
             const chat = this.chats.find(c => c.id === chatId);
             if (chat) {
-                // Обновляем содержимое элемента
-                const newElement = this.renderer.createChatItem(chat);
+                const newElement = this.renderer.createChatItem(chat, this.userService);
                 chatElement.replaceWith(newElement);
             }
         }
     }
     
-	
-    // sets up chat selection and navigation event handlers
-    // setupEvents() {
-	// 	console.log('ChatsList: setupEvents()');
-	// 	this.removeEventListeners();
-
-    //     this.boundHandlers.clickHandler = (event) => {
-    //         console.log('ChatsList: click event triggered');
-			
-	// 		if (event.target.classList.contains('chats-profile-avatar')) {
-	// 			event.stopPropagation(); // ВАЖНО!
-	// 			this.eventBus.emit('profile-requested');
-	// 			return;
-	// 		}
-			
-	// 		// handles left-click
-	// 		this.container.addEventListener('click', (event) => {
-	// 			if (event.target.classList.contains('chats-profile-avatar')) {
-	// 				this.eventBus.emit('profile-requested');
-	// 				return;
-	// 			}
-	
-	// 			if (event.target.classList.contains('search-input')) {
-	// 				if (window.app.leftPanel.getCurrentComponentName() !== 'search') {
-	// 					window.app.leftPanel.loadComponent('search');
-	// 				}
-	// 				return;
-	// 			}
-	
-	// 			const chatItem = event.target.closest('.chat-item');
-	// 			if (chatItem) {
-	// 				const chatId = parseInt(chatItem.dataset.chatId);
-	// 				const chat = this.chats.find(c => c.id === chatId);
-					
-	// 				if (chat) {
-	// 					this.eventBus.emit('chat-selected', {
-	// 						id: chat.id,
-	// 						userId: chat.userId,
-	// 						name: chat.name,
-	// 						avatarUrl: chat.avatarUrl,
-	// 						type: chat.type
-	// 					});
-	// 				}
-	
-	// 				setTimeout(() => this.refresh(), 100);
-	// 			}
-	// 		});
-    //     };
-		
- 
-	// 	};
-
-    //     this.boundHandlers.documentClickHandler = (event) => {
-	// 		// ПРОВЕРЯЕМ что клик НЕ по аватарке
-	// 		if (!event.target.classList.contains('chats-profile-avatar')) {
-	// 			console.log('ChatsList: document click for context menu');
-	// 			this.hideContextMenu();
-	// 		}
-    //         console.log('ChatsList: document click for context menu');
-    //         this.hideContextMenu();
-    //     };
-
-	// 	this.container.addEventListener('click', this.boundHandlers.clickHandler);
-    //     this.container.addEventListener('contextmenu', this.boundHandlers.contextMenuHandler);
-    //     document.addEventListener('click', this.boundHandlers.documentClickHandler);
-    // }
-
     showContextMenu(event, chat, chatElement) {
         this.hideContextMenu();
         
@@ -291,14 +240,15 @@ class ChatsList {
         try {
             switch (action) {
                 case 'pin':
-                    await window.mockDataService.toggleChatPin(chatId);
+                    await this.apiService.toggleChatPin(chatId);
                     break;
                 case 'mute':
-                    await window.mockDataService.toggleChatMute(chatId);
+                    await this.apiService.toggleChatMute(chatId);
                     break;
                 case 'delete':
                     if (confirm('Delete chat? This action cannot be undone.')) {
-                        await window.mockDataService.deleteChat(chatId);
+                        await this.apiService.deleteChat(chatId);
+                        this.eventBus.emit('chat-deleted', { chatId: chatId });
                     }
                     break;
             }
@@ -310,15 +260,48 @@ class ChatsList {
         }
     }
 
-    updateProfileAvatar() {
+    async updateProfileAvatar() {
         const profileAvatar = this.container.querySelector('.chats-profile-avatar');
         if (profileAvatar) {
-            const currentUser = window.mockDataService.getCurrentUser();
+            const currentUser = await this.apiService.getCurrentUser();
             profileAvatar.src = currentUser.avatarUrl;
         }
     }
 
-	async refresh() {
+    // Подписываемся на обновления статусов пользователей
+    subscribeToUserUpdates() {
+        this.unsubscribeFromUserUpdates = this.userService.subscribe((event, data) => {
+            if (event === 'user-status-changed') {
+                // Обновляем только индикатор онлайн для конкретного пользователя
+                this.updateUserStatusInDOM(data.userId, data.isOnline);
+            }
+        });
+    }
+
+    // Обновляет статус пользователя в DOM без полной перерисовки
+    updateUserStatusInDOM(userId, isOnline) {
+        const chat = this.chats.find(c => c.userId === userId);
+        if (chat) {
+            const chatElement = this.container.querySelector(`[data-chat-id="${chat.id}"]`);
+            if (chatElement) {
+                const indicator = chatElement.querySelector('.online-indicator');
+                if (isOnline && !indicator) {
+                    // Добавляем индикатор
+                    const avatar = chatElement.querySelector('.chat-avatar img');
+                    if (avatar) {
+                        const newIndicator = document.createElement('span');
+                        newIndicator.className = 'online-indicator';
+                        avatar.parentNode.appendChild(newIndicator);
+                    }
+                } else if (!isOnline && indicator) {
+                    // Убираем индикатор
+                    indicator.remove();
+                }
+            }
+        }
+    }
+
+    async refresh() {
         console.log(`[${this.instanceId}] ChatsList: refresh() called`);
         await this.loadData();
         this.render();
@@ -344,131 +327,13 @@ class ChatsList {
     destroy() {
         console.log(`[${this.instanceId}] ChatsList: destroy()`);
         this.removeEventListeners();
+        // Отписываемся от обновлений пользователей
+        if (this.unsubscribeFromUserUpdates) {
+            this.unsubscribeFromUserUpdates();
+        }
         this.boundHandlers = {};
     }
 }
 
-class ChatsListDataLoader {
-    constructor() {
-        this.mockService = window.mockDataService;
-    }
-    
-    async getAll(offset = 0, limit = 50) {
-        return await this.mockService.getChats(offset, limit);
-    }
-}
 
-class ChatsListRenderer {
-    render(chats, container) {
-        const chatsList = container.querySelector('#chats-list ul');
-        if (!chatsList) {
-            console.error('#chats-list ul element not found');
-            return;
-        }
 
-        chatsList.innerHTML = '';
-
-        chats.forEach(chat => {
-            const chatItem = this.createChatItem(chat);
-            chatsList.appendChild(chatItem);
-        });
-    }
-
-    // В ChatsListRenderer.createChatItem()
-    createChatItem(chat) {
-        const li = document.createElement('li');
-        li.className = 'chat-item';
-        li.dataset.chatId = chat.id;
-        
-        // Добавляем классы состояния
-        if (chat.isPinned) li.classList.add('pinned');
-        if (chat.unreadCount > 0) li.classList.add('unread');
-        
-        const timeStr = this.formatTime(chat.lastMessage.time);
-        const unreadBadge = chat.unreadCount > 0 ? 
-            `<span class="unread-count${chat.isMuted ? ' muted' : ''}">${chat.unreadCount}</span>` : '';
-        const pinnedIcon = chat.isPinned ? '<span class="pinned-icon">📌</span>' : '';
-        const mutedIcon = chat.isMuted ? '<span class="muted-icon">🔇</span>' : '';
-        
-        // Определяем статус сообщения
-        const messageStatus = this.getMessageStatus(chat.lastMessage);
-        
-        li.innerHTML = `
-            <div class="chat-avatar">
-                <img src="${chat.avatarUrl}" alt="${chat.name}">
-                ${this.getOnlineIndicator(chat)}
-            </div>
-            <div class="chat-info">
-                <div class="chat-header">
-                    <div class="chat-name">${chat.name}</div>
-                    <div class="chat-time">${timeStr}</div>
-                </div>
-                <div class="chat-footer">
-                    <div class="last-message">
-                        ${messageStatus}${this.formatLastMessage(chat)}
-                    </div>
-                    <div class="chat-badges">
-                        ${pinnedIcon}${mutedIcon}${unreadBadge}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        return li;
-    }
-
-    getOnlineIndicator(chat) {
-        // Проверяем онлайн статус пользователя
-        const user = window.mockDataService.users.find(u => u.id === chat.userId);
-        return user && user.isOnline ? '<span class="online-indicator"></span>' : '';
-    }
-
-    getMessageStatus(message) {
-        if (message.senderId === 1) { // Текущий пользователь
-            return message.isRead ? 
-                '<span class="message-status read">✓✓</span>' : 
-                '<span class="message-status sent">✓</span>';
-        }
-        return '';
-    }
-
-    // Улучшенное форматирование времени
-    formatTime(date) {
-        const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / (1000 * 60));
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-        if (minutes < 1) {
-            return 'сейчас';
-        } else if (minutes < 60) {
-            return `${minutes}м`;
-        } else if (hours < 24) {
-            return `${hours}ч`;
-        } else if (days === 1) {
-            return 'вчера';
-        } else if (days < 7) {
-            return `${days}д`;
-        } else {
-            return date.toLocaleDateString('ru-RU', { 
-                day: 'numeric', 
-                month: 'short' 
-            });
-        }
-    }
-
-    // formats last message with sender context
-    formatLastMessage(chat) {
-        const msg = chat.lastMessage;
-        let prefix = '';
-        
-        if (chat.type === 'group' && msg.senderName) {
-            prefix = `${msg.senderName}: `;
-        } else if (msg.senderId === 1) { // current user ID
-            prefix = 'You: ';
-        }
-        
-        return `${prefix}${msg.text}`;
-    }
-}

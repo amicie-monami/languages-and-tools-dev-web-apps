@@ -1,13 +1,18 @@
 class LeftPanelManager {
-    constructor(containerSelector, eventBus) {
+    constructor(containerSelector, eventBus, apiService, userService) {
+        console.log("[LeftPanelManger] constructor()")
         this.container = document.querySelector(containerSelector);
         this.eventBus = eventBus;
+        this.apiService = apiService;
+        this.userService = userService;
+
         this.components = {
-            'chats-list': new ChatsList(this.eventBus),
-            'profile': new Profile(this.eventBus),
-            'search': new Search(this.eventBus),
-            'profile-editor': new ProfileEditor(this.eventBus)
+            'chats-list': new ChatsList(this.eventBus, this.apiService, this.userService),
+            'profile': new Profile(this.eventBus, this.apiService, this.userService),
+            'search': new Search(this.eventBus, this.apiService, this.userService),
+            'profile-editor': new ProfileEditor(this.eventBus, this.apiService, this.userService)
         };
+
         this.currentComponent = null;
         this.currentComponentName = null;
         this.navigationStack = []; // maintains navigation history for back functionality
@@ -29,52 +34,6 @@ class LeftPanelManager {
         });
         console.log(`   Top: ${JSON.stringify(this.navigationStack[this.navigationStack.length - 1])}`);
     }
-
-    // loads and initializes component with navigation stack management
-    // async loadComponent(componentName, data = null) {
-    //     console.log(`LeftPanelManager: Loading component ${componentName}`);
-    //     this.logNavigationStack(`Before loading ${componentName}`);
-    
-    //     try {
-    //         // cleanup last component
-    //         if (this.currentComponent && this.currentComponent.destroy) {
-    //             console.log(`LeftPanelManager: Destroying previous component ${this.currentComponentName}`);
-    //             this.currentComponent.destroy();
-    //             this.currentComponent = null; 
-    //         }
-
-    //         // pushes to stack only if component or data differs from current
-    //         if (this.currentComponentName && 
-    //                 (this.currentComponentName !== componentName || JSON.stringify(this.currentComponentData) !== JSON.stringify(data))) {
-    //                     this.navigationStack.push({
-    //                         name: this.currentComponentName,
-    //                         data: this.currentComponentData
-    //                     });
-    //         }
-            
-    //         await this.loadHTML(componentName);
-    //         const component = this.components[componentName];
-
-    //         if (!component) {
-    //             console.error(`Component ${componentName} not found`);
-    //             return;
-    //         }
-            
-    //         // cleans up previous component before initializing new one
-    //         if (this.currentComponent) this.currentComponent.destroy();
-
-    //         console.log(`LeftPanelManager: Initializing component ${componentName}`);
-    //         component.init(this.container, data);
-    //         this.currentComponent = component;
-    //         this.currentComponentName = componentName;
-    //         this.currentComponentData = data;
-
-    //     } catch (error) {
-    //         console.error('Component loading error:', error);
-    //         this.container.innerHTML = '<p>Loading error</p>';
-    //     }
-    //     this.logNavigationStack(`After loading ${componentName}`);
-    // }
 
     async loadComponent(componentName, data = null) {
         console.log(`LeftPanelManager: Loading component ${componentName}`);
@@ -164,11 +123,9 @@ class LeftPanelManager {
     }
 
     updateChatInList(data) {
-        const currentComponent = this.getCurrentComponent(); // ← Убрать .leftPanel
+        const currentComponent = this.getCurrentComponent();
         if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
-            if (typeof currentComponent.updateSingleChat === 'function') {
-                currentComponent.updateSingleChat(data.chatId, data.message);
-            }
+            currentComponent.updateSingleChat(data.chatId, data.message);
         }
     }
 

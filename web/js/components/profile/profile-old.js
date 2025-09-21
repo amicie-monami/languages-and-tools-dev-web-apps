@@ -148,7 +148,7 @@ class Profile {
         this.eventBus.emit('open-chat-with-user', {
             userId: this.userData.id,
             userName: this.userData.name,
-            userAvatar: this.userData.avatar
+            userAvatar: this.userData.avatarUrl
         });
 
         window.app.leftPanel.goBack();

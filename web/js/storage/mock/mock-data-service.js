@@ -393,22 +393,12 @@ class MockDataService {
     }
 
     simulateIncomingMessage(chatId) {
-        const responses = [
-            "Понятно!",
-            "Согласен с тобой",
-            "Интересная идея...",
-            "А что ты об этом думаешь?",
-            "Хорошо, договорились!",
-            "Может встретимся обсудить?",
-            "Пришли ссылку, посмотрю",
-            "👍"
-        ];
 
         setTimeout(() => {
             const chat = this.chats.find(c => c.id === chatId);
             if (!chat) return;
 
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            const randomResponse = this.getRandomResponse();
             const user = this.users.find(u => u.id === chat.userId);
             
             const newMessage = {
@@ -428,19 +418,50 @@ class MockDataService {
             }
             this.messages.get(chatId).push(newMessage);
 
+            const isActiveChatId = this.getActiveChatId();
+            const isActiveChat = isActiveChatId === chatId;    
+
             chat.lastMessage = {
                 text: randomResponse,
                 time: new Date(),
                 senderId: user.id,
-                isRead: false
+                isRead: isActiveChat
             };
-            chat.unreadCount++;
+
+            if (!isActiveChat) {
+                chat.unreadCount++;
+            }
 
             document.dispatchEvent(new CustomEvent('newMessage', {
                 detail: { chatId, message: newMessage }
             }));
 
         }, 1000 + Math.random() * 2000); 
+    }
+
+    getActiveChatId() {
+        // Проверяем через глобальное приложение какой чат открыт
+        if (window.app && window.app.rightPanel && window.app.rightPanel.currentComponent) {
+            const currentChat = window.app.rightPanel.currentComponent;
+            if (currentChat.chatData) {
+                return currentChat.chatData.id;
+            }
+        }
+        return null;
+    }
+
+    getRandomResponse() {
+        const responses = [
+            "Понятно!",
+            "Согласен с тобой",
+            "Интересная идея...",
+            "А что ты об этом думаешь?",
+            "Хорошо, договорились!",
+            "Может встретимся обсудить?",
+            "Пришли ссылку, посмотрю",
+            "👍"
+        ];
+        return responses[Math.floor(Math.random() * responses.length)];
     }
 }
 

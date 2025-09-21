@@ -1,11 +1,13 @@
 class RightPanelManager {
-    constructor(containerSelector, eventBus) {
-        console.log("rightPanelManager.constructor()")
+    constructor(containerSelector, eventBus, apiService, userService) {
+        console.log("[RightPanelManager] constructor()")
         this.container = document.querySelector(containerSelector);
         this.eventBus = eventBus;
+       
         this.components = {
-            chat: new Chat(this.eventBus)
+            chat: new Chat(this.eventBus, apiService, userService)
         };
+       
         this.currentComponent = null;
         this.currentComponentName = null;
     }
