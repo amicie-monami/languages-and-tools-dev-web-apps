@@ -1,8 +1,7 @@
-/* contacts.css */
 .contacts-list-section {
     padding: 0 20px 20px;
     border-top: 1px solid #333;
-    margin-top: 20px;
+    margin-top: 0px;
 }
 
 .contacts-list-header {
@@ -48,18 +47,6 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    object-fit: cover;
-}
-
-.online-indicator {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    background: #28a745;
-    border: 2px solid #1e1e1e;
-    border-radius: 50%;
 }
 
 .contact-info {
@@ -100,4 +87,39 @@
     color: #888;
     padding: 20px;
     font-style: italic;
+}
+
+
+<!--FFFF-->
+.contact-action-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 180px;
+}
+
+.add-contact {
+    background: #007bff;
+    color: white;
+}
+
+.add-contact:hover {
+    background: #0056b3;
+}
+
+.remove-contact {
+    background: #dc3545;
+    color: white;
+}
+
+.remove-contact:hover {
+    background: #c82333;
+}
+
+.contact-action-button:disabled {
+    background: #666;
+    cursor: not-allowed;
 }

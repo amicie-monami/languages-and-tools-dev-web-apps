@@ -1,31 +1,36 @@
 <!-- profile.html -->
-<div class="profile-header">
-    <button class="back-button">←</button>
-    <h2 class="profile-title">Профиль</h2>
-</div>
-<div class="profile-section">
-    <img class="profile-avatar" src="assets/placeholder.png" alt="Profile Avatar">
-    <div class="profile-name">Имя пользователя</div>
-    <div class="username">@username</div>
-    <div class="status">Статус</div>
-</div>
-<div class="profile-actions">
-    <!-- dynamic buttons -->
-</div>
-<div class="biography-section">
-    <div class="biography-header">О себе</div>
-    <div class="profile-biography">Биография пользователя</div>
-</div>
-<div class="contacts-section">
-    <div class="profile-phone">Телефон</div>
-    <div class="profile-email">Email</div>
-</div>
-<div class="contacts-list-section" style="display: none;">
-    <div class="contacts-list-header">
-        <h3>Контакты</h3>
-        <span class="contacts-count">0</span>
+<div class="profile-container">
+    <div class="profile-header">
+        <button class="back-button">←</button>
+        <h2 class="profile-title">Профиль</h2>
+        <div class="header-actions">
+            <!-- динамически добавляется кнопка редактирования -->
+        </div>
     </div>
-    <div class="contacts-list" id="contacts-list">
-        <!-- dynamic contacts -->
+
+    <div class="profile-main">
+        <img class="profile-avatar" src="assets/placeholder.png" alt="Profile Avatar">
+        <div class="profile-name">Имя пользователя</div>
+        <div class="username">@username</div>
+        <div class="status">Статус</div>
+    </div>
+
+    <div class="biography-section">
+        <div class="bio-header">О себе</div>
+        <div class="profile-biography">Биография пользователя</div>
+    </div>
+
+    <div class="profile-actions">
+        <!-- динамические кнопки действий -->
+    </div>
+
+    <div class="contacts-list-section" style="display: none;">
+        <div class="contacts-list-header">
+            <h3>Контакты</h3>
+            <span class="contacts-count">0</span>
+        </div>
+        <div class="contacts-list" id="contacts-list">
+            <!-- dynamic contacts -->
+        </div>
     </div>
 </div>

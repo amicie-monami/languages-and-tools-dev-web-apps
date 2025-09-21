@@ -1,4 +1,3 @@
-// mock-data-service.js
 class MockDataService {
     constructor() {
         this.users = this.generateUsers();
@@ -77,7 +76,9 @@ class MockDataService {
         await this.delay(300);
         
         this.chats = this.chats.filter(c => c.id !== chatId);
+
         this.messages.delete(chatId);
+
         return true;
     }
     
@@ -85,36 +86,49 @@ class MockDataService {
         return [
             {
                 id: 1,
-                name: "You",
+                name: "Вы",
                 username: "me",
                 avatarUrl: "assets/me.png",
-                bio: "Sample bio text",
-                phone: "+7 123 456 7890",
-                email: "me@example.com",
+                bio: "Черный черный черный черный черный черный черный негр",
                 lastSeen: new Date(),
                 isOnline: true
             },
             {
                 id: 2,
-                name: "Anna Smirnova",
+                name: "Анна Смирнова",
                 username: "anna_s",
                 avatarUrl: "assets/anna.png",
-                bio: "UI/UX Designer",
-                phone: "+7 987 654 3210",
-                email: "anna@example.com",
+                bio: "Дизайнер UI/UX. Люблю минимализм и хорошие шрифты.",
                 lastSeen: new Date(Date.now() - 5 * 60 * 1000), 
                 isOnline: true
             },
             {
                 id: 3,
-                name: "Maxim Petrov",
+                name: "Максим Петров",
                 username: "max_dev",
                 avatarUrl: "assets/max.png",
-                bio: "Fullstack developer",
-                phone: "+7 555 123 4567",
-                email: "max@example.com",
+                bio: "Fullstack разработчик. React, Node.js, PostgreSQL",
                 lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000), 
                 isOnline: false
+            },
+            {
+                id: 4,
+                name: "Лиза Козлова",
+                username: "liza_k",
+                avatarUrl: "assets/liza.png",
+                bio: "Маркетолог и путешественница ✈️",
+                lastSeen: new Date(Date.now() - 24 * 60 * 60 * 1000), 
+                isOnline: false
+            },
+            {
+                id: 5,
+                name: "Группа JS разработчиков",
+                username: "js_devs",
+                avatarUrl: "assets/group_js.png",
+                bio: "Обсуждаем JS, React, Vue и все что связано с фронтендом",
+                isGroup: true,
+                members: [1, 2, 3],
+                isOnline: true
             }
         ];
     }
@@ -125,10 +139,10 @@ class MockDataService {
                 id: 1,
                 userId: 2, 
                 type: 'private',
-                name: "Anna Smirnova",
+                name: "Анна Смирнова",
                 avatarUrl: "assets/anna.png",
                 lastMessage: {
-                    text: "Hi! How's the project going?",
+                    text: "Привет! Как проект продвигается? Я очень сильно застрял в этом измерении черного тмина и белых пальм. Не знаю, когда я выберусь отсюда, но запах чует, осталось мне не долго. Вестерн, ковбои, белая шапка и мокрые кеды - я бреду по миру и думаю о новом корсете. Пули глаз моих свистят по ветру и нансоят врагу поражающий в репу. Но не горжусь я своими делами, ведь нет души там, где нет песка. Песок - вода, речной воздух и мягкие медузы.",
                     time: new Date(Date.now() - 10 * 60 * 1000), 
                     senderId: 2,
                     isRead: false
@@ -141,10 +155,10 @@ class MockDataService {
                 id: 2,
                 userId: 3, 
                 type: 'private',
-                name: "Maxim Petrov",
+                name: "Максим Петров",
                 avatarUrl: "assets/max.png",
                 lastMessage: {
-                    text: "Please check this code",
+                    text: "Посмотри этот код, пожалуйста",
                     time: new Date(Date.now() - 2 * 60 * 60 * 1000), 
                     senderId: 1, 
                     isRead: true
@@ -152,7 +166,40 @@ class MockDataService {
                 unreadCount: 0,
                 isPinned: true,
                 isMuted: false
-            }
+            },
+            // {
+            //     id: 3,
+            //     userId: 4, // Лиза
+            //     type: 'private',
+            //     name: "Лиза Козлова",
+            //     avatarUrl: "liza.png",
+            //     lastMessage: {
+            //         text: "Фото из Парижа!",
+            //         time: new Date(Date.now() - 24 * 60 * 60 * 1000), 
+            //         senderId: 4,
+            //         isRead: true
+            //     },
+            //     unreadCount: 0,
+            //     isPinned: false,
+            //     isMuted: false
+            // },
+            // {
+            //     id: 4,
+            //     userId: 5, // Группа
+            //     type: 'group',
+            //     name: "JS разработчики",
+            //     avatarUrl: "group_js.png",
+            //     lastMessage: {
+            //         text: "Кто-нибудь работал с WebRTC?",
+            //         time: new Date(Date.now() - 30 * 60 * 1000), 
+            //         senderId: 3,
+            //         senderName: "Максим",
+            //         isRead: false
+            //     },
+            //     unreadCount: 5,
+            //     isPinned: false,
+            //     isMuted: true
+            // }
         ];
     }
 
@@ -163,8 +210,8 @@ class MockDataService {
                 id: 1,
                 chatId: 1,
                 senderId: 2,
-                senderName: "Anna",
-                text: "Hi! How's the project going?",
+                senderName: "Анна",
+                text: "Привет! Как проект продвигается? Я очень сильно застрял в этом измерении черного тмина и белых пальм. Не знаю, когда я выберусь отсюда, но запах чует, осталось мне не долго. Вестерн, ковбои, белая шапка и мокрые кеды - я бреду по миру и думаю о новом корсете. Пули глаз моих свистят по ветру и нансоят врагу поражающий в репу. Но не горжусь я своими делами, ведь нет души там, где нет песка. Песок - вода, речной воздух и мягкие медузы.",
                 time: new Date(Date.now() - 60 * 60 * 1000), 
                 type: 'text',
                 isRead: true,
@@ -174,11 +221,44 @@ class MockDataService {
                 id: 2,
                 chatId: 1,
                 senderId: 1,
-                senderName: "You",
-                text: "Going well, thanks!",
+                senderName: "Вы",
+                text: "Привет! Зажигательный танец под вечер устроил чегорин. Все внимали и с тихой усладкой наблюдали за настоящей грацией - настоящей, понимаешь? Неподдельной, живой. Могучей. Такие столпы появляются раз в тысячелетие и зиждятся на чем-то не земном, не вообразимом. Он ест и пьет, мучит и пучит. Невозможно оторвать глаз. Загляденье, каких не видел усопший под пеплом везувия.",
                 time: new Date(Date.now() - 55 * 60 * 1000),
                 type: 'text',
                 isRead: true,
+                isEdited: false
+            },
+            {
+                id: 3,
+                chatId: 1,
+                senderId: 2,
+                senderName: "Анна",
+                text: "Звучит интересно! Расскажешь подробнее?",
+                time: new Date(Date.now() - 50 * 60 * 1000),
+                type: 'text',
+                isRead: true,
+                isEdited: false
+            },
+            {
+                id: 4,
+                chatId: 1,
+                senderId: 1,
+                senderName: "Вы",
+                text: "Это мессенджер на чистом JS. Делаю архитектуру с компонентами",
+                time: new Date(Date.now() - 45 * 60 * 1000),
+                type: 'text',
+                isRead: true,
+                isEdited: false
+            },
+            {
+                id: 5,
+                chatId: 1,
+                senderId: 2,
+                senderName: "Анна",
+                text: "Привет! Как проект продвигается?",
+                time: new Date(Date.now() - 10 * 60 * 1000),
+                type: 'text',
+                isRead: false,
                 isEdited: false
             }
         ]);
@@ -188,9 +268,31 @@ class MockDataService {
                 id: 6,
                 chatId: 2,
                 senderId: 3,
-                senderName: "Maxim",
-                text: "Do you have time to look at the code?",
+                senderName: "Максим",
+                text: "Есть время посмотреть код?",
                 time: new Date(Date.now() - 3 * 60 * 60 * 1000),
+                type: 'text',
+                isRead: true,
+                isEdited: false
+            },
+            {
+                id: 7,
+                chatId: 2,
+                senderId: 1,
+                senderName: "Вы",
+                text: "Конечно! Скидывай",
+                time: new Date(Date.now() - 2.5 * 60 * 60 * 1000),
+                type: 'text',
+                isRead: true,
+                isEdited: false
+            },
+            {
+                id: 8,
+                chatId: 2,
+                senderId: 1,
+                senderName: "Вы",
+                text: "Посмотри этот код, пожалуйста",
+                time: new Date(Date.now() - 2 * 60 * 60 * 1000),
                 type: 'text',
                 isRead: true,
                 isEdited: false
@@ -207,11 +309,11 @@ class MockDataService {
         return this.chats
             .slice(offset, offset + limit)
             .sort((a, b) => {
-                // Pinned chats first
+                // pinned chats at the beginning
                 if (a.isPinned !== b.isPinned) {
                     return a.isPinned ? -1 : 1;
                 }
-                // Then by last message time
+                // after by last msg time
                 return b.lastMessage.time - a.lastMessage.time;
             });
     }
@@ -238,13 +340,13 @@ class MockDataService {
             isEdited: false
         };
 
-        // Add message to chat
+        // Add a msg to the chat
         if (!this.messages.has(chatId)) {
             this.messages.set(chatId, []);
         }
         this.messages.get(chatId).push(newMessage);
 
-        // Update last message in chat
+        // Update last msg in chat
         const chat = this.chats.find(c => c.id === chatId);
         if (chat) {
             chat.lastMessage = {
@@ -292,13 +394,13 @@ class MockDataService {
 
     simulateIncomingMessage(chatId) {
         const responses = [
-            "Got it!",
-            "I agree with you",
-            "Interesting idea...",
-            "What do you think about this?",
-            "Okay, deal!",
-            "Maybe we can meet to discuss?",
-            "Send me the link, I'll check it",
+            "Понятно!",
+            "Согласен с тобой",
+            "Интересная идея...",
+            "А что ты об этом думаешь?",
+            "Хорошо, договорились!",
+            "Может встретимся обсудить?",
+            "Пришли ссылку, посмотрю",
             "👍"
         ];
 

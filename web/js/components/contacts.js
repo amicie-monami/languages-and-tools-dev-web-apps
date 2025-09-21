@@ -1,4 +1,3 @@
-// contacts.js
 class ContactsManager {
     constructor() {
         this.contacts = [];
@@ -14,7 +13,7 @@ class ContactsManager {
         try {
             this.contacts = await window.mockDataService.getContacts();
         } catch (error) {
-            console.error('Error loading contacts:', error);
+            console.error('Ошибка загрузки контактов:', error);
             this.contacts = [];
         }
     }
@@ -26,7 +25,7 @@ class ContactsManager {
         contactsList.innerHTML = '';
 
         if (this.contacts.length === 0) {
-            contactsList.innerHTML = '<p class="no-contacts">No contacts yet</p>';
+            contactsList.innerHTML = '<p class="no-contacts">Контактов пока нет</p>';
             return;
         }
 
@@ -54,7 +53,7 @@ class ContactsManager {
                 <div class="contact-username">@${contact.username}</div>
             </div>
             <div class="contact-actions">
-                <button class="message-contact-btn" title="Send message">💬</button>
+                <button class="message-contact-btn" title="Написать сообщение">💬</button>
             </div>
         `;
 
@@ -75,7 +74,7 @@ class ContactsManager {
         contactElement.addEventListener('click', () => {
             window.app.leftPanel.loadComponent('profile', { 
                 userId: contact.id,
-                from: 'profile'
+                from: 'profile' // Указываем что пришли из профиля
             });
         });
     }

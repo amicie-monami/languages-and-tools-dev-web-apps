@@ -1,4 +1,3 @@
-// search.js
 class Search {
     constructor(eventBus) {
         this.eventBus = eventBus;
@@ -13,100 +12,95 @@ class Search {
         this.container = container;
         this.render();
         this.setupEvents();
+        
+        // Автоматически фокусируемся на поле поиска
+        setTimeout(() => {
+            const searchInput = this.container.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 100);
     }
 
     render() {
-        this.container.innerHTML = `
-            <div class="search-header">
-                <input type="text" id="search-input" placeholder="Search users..." class="search-input">
-                <button id="search-cancel-btn" class="search-cancel-btn">Cancel</button>
-            </div>
-            <div id="search-results" class="search-results">
-                <p class="search-placeholder">Start typing to search users</p>
-            </div>
-        `;
+        this.renderer.renderResults(this.searchResults, this.container);
     }
 
     setupEvents() {
-        const searchInput = this.container.querySelector('#search-input');
-        const cancelBtn = this.container.querySelector('#search-cancel-btn');
-        
+        const searchInput = this.container.querySelector('.search-input');
+        const backButton = this.container.querySelector('.back-button');
+
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.handleSearchInput(e.target.value);
             });
-            
-            searchInput.focus();
         }
-        
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                window.app.leftPanel.goBack();
+
+        if (backButton) {
+            backButton.addEventListener('click', () => {
+                window.app.leftPanel.goBack(); // Используем стек
             });
         }
+
+        // Клик по результату поиска
+        this.container.addEventListener('click', (event) => {
+            const userItem = event.target.closest('.search-result-item');
+            if (userItem) {
+                const userId = parseInt(userItem.dataset.userId);
+                this.openUserProfile(userId);
+            }
+        });
     }
 
     handleSearchInput(query) {
-        clearTimeout(this.searchTimeout);
+        console.log('Поиск по запросу:', query); 
         
-        if (query.length < 2) {
-            this.showPlaceholder('Start typing to search users');
-            return;
+        // Очищаем предыдущий timeout
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
         }
-        
-        this.showLoading();
-        
+
+        // Задержка перед поиском
         this.searchTimeout = setTimeout(async () => {
-            try {
-                this.searchResults = await this.dataLoader.searchUsers(query);
-                this.renderResults();
-            } catch (error) {
-                console.error('Search error:', error);
-                this.showPlaceholder('Search error');
+            if (query.trim().length > 0) {
+                await this.performSearch(query.trim());
+            } else {
+                this.searchResults = [];
+                this.render();
             }
         }, 300);
     }
 
-    async renderResults() {
-        const resultsContainer = this.container.querySelector('#search-results');
-        
-        if (this.searchResults.length === 0) {
-            this.showPlaceholder('No users found');
-            return;
+    async performSearch(query) {
+        try { 
+            console.log('Вызываем dataLoader.searchUsers'); 
+            this.searchResults = await this.dataLoader.searchUsers(query);
+            console.log('Результаты поиска:', this.searchResults);
+            this.render();
+        } catch (error) {
+            console.error('Ошибка поиска:', error);
+            this.searchResults = [];
+            this.render();
         }
-        
-        resultsContainer.innerHTML = '';
-        
-        this.searchResults.forEach(user => {
-            const userElement = this.renderer.createUserResult(user);
-            resultsContainer.appendChild(userElement);
-            
-            // Add click handler
-            userElement.addEventListener('click', () => {
-                this.openUserProfile(user);
+    }
+
+    openUserProfile(userId) {
+        // Найти пользователя из результатов поиска
+        const user = this.searchResults.find(u => u.id === userId);
+        if (user) {
+            // Открываем чат с этим пользователем
+            this.eventBus.emit('open-chat-with-user', {
+                userId: user.id,
+                userName: user.name,
+                userAvatar: user.avatarUrl
             });
-        });
-    }
-
-    showPlaceholder(text) {
-        const resultsContainer = this.container.querySelector('#search-results');
-        resultsContainer.innerHTML = `<p class="search-placeholder">${text}</p>`;
-    }
-
-    showLoading() {
-        const resultsContainer = this.container.querySelector('#search-results');
-        resultsContainer.innerHTML = '<p class="search-placeholder">Searching...</p>';
-    }
-
-    openUserProfile(user) {
-        window.app.leftPanel.loadComponent('profile', { 
-            userId: user.id,
-            from: 'search'
-        });
+        }
     }
 
     destroy() {
-        clearTimeout(this.searchTimeout);
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
     }
 }
 
@@ -121,18 +115,43 @@ class SearchDataLoader {
 }
 
 class SearchRenderer {
-    createUserResult(user) {
+    renderResults(results, container) {
+        const resultsContainer = container.querySelector('.search-results');
+        if (!resultsContainer) {
+            console.error('Элемент .search-results не найден');
+            return;
+        }
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<p class="no-results">Ничего не найдено</p>';
+            return;
+        }
+
+        resultsContainer.innerHTML = '';
+
+        results.forEach(user => {
+            const userItem = this.createUserItem(user);
+            resultsContainer.appendChild(userItem);
+        });
+    }
+
+    createUserItem(user) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         div.dataset.userId = user.id;
         
+        const onlineStatus = user.isOnline ? 
+            '<span class="online-indicator"></span>' : '';
+        
         div.innerHTML = `
-            <div class="result-avatar">
+            <div class="user-avatar">
                 <img src="${user.avatarUrl}" alt="${user.name}">
+                ${onlineStatus}
             </div>
-            <div class="result-info">
-                <div class="result-name">${user.name}</div>
-                <div class="result-username">@${user.username}</div>
+            <div class="user-info">
+                <div class="user-name">${user.name}</div>
+                <div class="user-username">@${user.username}</div>
+                <div class="user-bio">${user.bio || ''}</div>
             </div>
         `;
         

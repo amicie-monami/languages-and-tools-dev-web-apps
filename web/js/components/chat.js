@@ -1,4 +1,3 @@
-// chat.js
 class Chat {
     constructor(eventBus) {
         this.eventBus = eventBus;
@@ -18,7 +17,7 @@ class Chat {
         this.removeEventListeners();
 
         if (!chatData) {
-            console.error('Chat data not provided');
+            console.error('Данные чата не переданы');
             return;
         }
 
@@ -33,19 +32,19 @@ class Chat {
         try {
             this.messages = await this.dataLoader.getMessages(this.chatData.id);
         } catch (error) {
-            console.error('Error loading messages:', error);
+            console.error('Ошибка загрузки сообщений:', error);
             this.messages = [];
         }
     }
 
     render() {
-        // Update chat header
+        // Обновляем заголовок чата
         this.updateChatHeader();
         
-        // Render messages
+        // Рендерим сообщения
         this.renderer.renderMessages(this.messages, this.container);
         
-        // Scroll to bottom
+        // Прокручиваем в конец
         this.scrollToBottom();
     }
 
@@ -56,7 +55,7 @@ class Chat {
         
         if (avatar) avatar.src = this.chatData.avatarUrl;
         if (name) name.textContent = this.chatData.name;
-        if (status) status.textContent = 'Online';
+        if (status) status.textContent = 'В сети'; // можно брать из данных
     }
 
     setupEvents() {
@@ -67,6 +66,7 @@ class Chat {
         const userAvatar = this.container.querySelector('.chat-user-avatar');
         if (userAvatar) {
             userAvatar.addEventListener('click', () => {
+                console.log('Клик по аватарке пользователя, chatData:', this.chatData); // Отладка
                 this.eventBus.emit('user-profile-requested', {
                     userId: this.chatData.userId
                 });
@@ -76,7 +76,7 @@ class Chat {
         const sendButton = this.container.querySelector('#send-button');
         const messageInput = this.container.querySelector('#message-input');
         
-        // Create bound methods for removal
+        // Создаем bound методы для возможности их удаления
         this.sendMessageHandler = () => this.sendMessage();
         this.keyPressHandler = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -98,7 +98,7 @@ class Chat {
             messageInput.addEventListener('input', this.inputHandler);
         }
         
-        // Save handler reference for removal
+        // Сохраняем ссылку на обработчик для удаления
         this.newMessageHandler = (event) => {
             if (event.detail.chatId === this.chatData.id) {
                 this.messages.push(event.detail.message);
@@ -117,7 +117,7 @@ class Chat {
         if (!text) return;
 
         try {
-            // If temporary chat - create permanent one
+            // Если это временный чат - создаем постоянный
             if (this.chatData.isTemporary) {
                 await this.createPermanentChat(text);
             }
@@ -133,12 +133,12 @@ class Chat {
             });
             
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('Ошибка отправки сообщения:', error);
         }
     }
 
     async createPermanentChat(firstMessage) {
-        // Create permanent chat in MockDataService
+        // Создаем постоянный чат в MockDataService
         const permanentChat = {
             id: Date.now(),
             userId: this.chatData.userId,
@@ -156,10 +156,10 @@ class Chat {
             isMuted: false
         };
         
-        // Add to chats list
+        // Добавляем в список чатов
         window.mockDataService.chats.unshift(permanentChat);
         
-        // Update current chat data
+        // Обновляем данные текущего чата
         this.chatData = permanentChat;
     }
 
@@ -171,7 +171,7 @@ class Chat {
     }
 
     removeEventListeners() {
-        // Remove previously set handlers
+        // Удаляем обработчики если они были установлены ранее
         if (this.sendMessageHandler) {
             const sendButton = this.container?.querySelector('#send-button');
             if (sendButton) {
@@ -211,7 +211,7 @@ class ChatRenderer {
     renderMessages(messages, container) {
         const messagesList = container.querySelector('#messages-list');
         if (!messagesList) {
-            console.error('#messages-list element not found');
+            console.error('Элемент #messages-list не найден');
             return;
         }
 
@@ -225,7 +225,7 @@ class ChatRenderer {
 
     createMessageElement(message) {
         const div = document.createElement('div');
-        const isOutgoing = message.senderId === 1; // current user
+        const isOutgoing = message.senderId === 1; // текущий пользователь
         
         div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
         div.dataset.messageId = message.id;

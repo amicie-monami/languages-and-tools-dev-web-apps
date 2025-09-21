@@ -1,6 +1,6 @@
-// right-panel-manager.js
 class RightPanelManager {
     constructor(containerSelector, eventBus) {
+        console.log("rightPanelManager.constructor()")
         this.container = document.querySelector(containerSelector);
         this.eventBus = eventBus;
         this.components = {
@@ -10,12 +10,11 @@ class RightPanelManager {
         this.currentComponentName = null;
     }
 
+    // loads and initializes right panel components
     async loadComponent(componentName, data = null) {
         try {
-            // Load HTML
             await this.loadHTML(componentName);
             
-            // Get component
             const component = this.components[componentName];
             
             if (!component) {
@@ -23,17 +22,17 @@ class RightPanelManager {
                 return;
             }
             
-            // Destroy previous component
+            // cleans up previous component instance
             if (this.currentComponent && this.currentComponent.destroy) {
                 this.currentComponent.destroy();
             }            
-            // Initialize new one
+            
             component.init(this.container, data);
             this.currentComponent = component;
             this.currentComponentName = componentName;
             
         } catch (error) {
-            console.error('Error loading component:', error);
+            console.error('Component loading error:', error);
             this.container.innerHTML = '<p>Loading error</p>';
         }
     }
@@ -47,6 +46,7 @@ class RightPanelManager {
         this.container.innerHTML = html;
     }
 
+    // displays default state when no chat is selected
     showEmptyState() {
         this.container.innerHTML = `
             <div class="empty-state">
