@@ -19,6 +19,7 @@ class ChatsList {
 
     async init(container, data) {
         this.container = container;
+        await this.setProfileAvatar();
         await this.loadData();
         this.render();
         this.setupEvents();
@@ -40,7 +41,6 @@ class ChatsList {
 
     render() {
         console.log(`[${this.instanceId}] ChatsList: render()`);
-        this.updateProfileAvatar();
         this.renderer.render(this.chats, this.container, this.userService);
     }
 
@@ -130,6 +130,22 @@ class ChatsList {
 
         document.addEventListener('click', this.boundHandlers.documentClickHandler);
         console.log(`[${this.instanceId}] Event listeners added`);
+    }
+
+    // Новый метод - устанавливает аватар сразу с правильным src
+    async setProfileAvatar() {
+        const profileAvatar = this.container.querySelector('.chats-profile-avatar');
+        if (!profileAvatar) return;
+        
+        try {
+            const currentUser = await this.apiService.getCurrentUser();
+            // Устанавливаем аватар пользователя или fallback на placeholder
+            profileAvatar.src = currentUser.avatarUrl || 'assets/placeholder.png';
+        } catch (error) {
+            console.error('Error loading current user avatar:', error);
+            // В случае ошибки показываем placeholder
+            profileAvatar.src = 'assets/placeholder.png';
+        }
     }
 
     async setActiveChat(chatId) {
@@ -261,11 +277,7 @@ class ChatsList {
     }
 
     async updateProfileAvatar() {
-        const profileAvatar = this.container.querySelector('.chats-profile-avatar');
-        if (profileAvatar) {
-            const currentUser = await this.apiService.getCurrentUser();
-            profileAvatar.src = currentUser.avatarUrl;
-        }
+        await this.setProfileAvatar()
     }
 
     // Подписываемся на обновления статусов пользователей

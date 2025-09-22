@@ -18,17 +18,20 @@ class ProfileEditor {
         this.container = container;
         
         try {
-            // Сначала показываем простое состояние загрузки
+            // показываем простое состояние загрузки
             this.setSimpleLoadingState(true);
             
             await this.loadUserData();
+            
+            // устанавливаем аватар
+            this.setAvatarPreview();
+            
             this.render();
-            this.setupComponents(); // инициализируем компоненты до updateLoadingState
+            this.setupComponents();
             
             this.formValidator.storeOriginalValues();
 
             this.setupEvents();
-            // безопасный вызов updateLoadingState
             this.isLoading = false;
             this.updateLoadingState();
             
@@ -36,6 +39,16 @@ class ProfileEditor {
             console.error('Ошибка инициализации редактора профиля:', error);
             this.showErrorMessage('Не удалось загрузить данные профиля');
             this.setSimpleLoadingState(false);
+        }
+    }
+
+    // Новый метод для установки превью аватара
+    setAvatarPreview() {
+        const avatarPreview = this.container.querySelector('.avatar-preview');
+        if (avatarPreview && this.userData) {
+            avatarPreview.src = this.userData.avatarUrl || 'assets/placeholder.png';
+            // Сохраняем оригинальный URL для AvatarUploader
+            this.avatarUploader.originalAvatarUrl = this.userData.avatarUrl || 'assets/placeholder.png';
         }
     }
 
@@ -90,7 +103,11 @@ class ProfileEditor {
                     this.formValidator.adjustTextareaHeight(bioField);
                 }
             }
-            if (avatarPreview) avatarPreview.src = this.userData.avatarUrl || 'assets/placeholder.png';
+
+            // Аватар уже установлен в setAvatarPreview(), но на всякий случай
+            if (avatarPreview && !avatarPreview.src) {
+                avatarPreview.src = this.userData.avatarUrl || 'assets/placeholder.png';
+            }
         }
     }
 

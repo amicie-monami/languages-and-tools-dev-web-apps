@@ -20,8 +20,6 @@ class LeftPanelManager {
         this.TEMPORARY_COMPONENTS = ['profile-editor', 'search']; 
     }
 
-    
-
     logNavigationStack(message = "") {
         console.log(`${message} Navigation stack (${this.navigationStack.length} items):`);
         if (this.navigationStack.length === 0) {
@@ -40,20 +38,20 @@ class LeftPanelManager {
         this.logNavigationStack(`Before loading ${componentName}`);
         
         try {
-            // ИСПРАВЛЕНИЕ: НЕ добавляем в стек если загружается тот же компонент
+            // не добавляем в стек если загружается тот же компонент
             const isSameComponent = this.currentComponentName === componentName;
             const isSameData = JSON.stringify(this.currentComponentData) === JSON.stringify(data);
             
             console.log(`Same component: ${isSameComponent}, Same data: ${isSameData}`);
             
-            // cleanup предыдущего компонента ПЕРЕД загрузкой HTML
+            // cleanup предыдущего компонента перед загрузкой HTML
             if (this.currentComponent && this.currentComponent.destroy) {
                 console.log(`LeftPanelManager: Destroying previous component ${this.currentComponentName}`);
                 this.currentComponent.destroy();
                 this.currentComponent = null;
             }
     
-            // ДОБАВЛЯЕМ В СТЕК только если это действительно новый компонент/данные
+            // добавляем только если это действительно новый компонент/данные
             const shouldAddToStack = this.currentComponentName && 
                                         (!isSameComponent || !isSameData) &&
                                             !this.TEMPORARY_COMPONENTS.includes(this.currentComponentName);

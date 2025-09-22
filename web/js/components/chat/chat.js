@@ -25,6 +25,8 @@ class Chat {
             return;
         }
 
+        this.setChatAvatar();
+
         // Отмечаем чат как прочитанный через API
         await this.apiService.markChatAsRead(chatData.id);
 
@@ -35,6 +37,13 @@ class Chat {
         this.render();
         this.setupEvents();
         this.subscribeToUserUpdates();
+    }
+
+    setChatAvatar() {
+        const avatar = this.container.querySelector('.chat-user-avatar');
+        if (avatar && this.chatData) {
+            avatar.src = this.chatData.avatarUrl || 'assets/placeholder.png';
+        }
     }
 
     async loadMessages() {
@@ -57,7 +66,10 @@ class Chat {
         const name = this.container.querySelector('.chat-user-name');
         const status = this.container.querySelector('.chat-user-status');
         
-        if (avatar) avatar.src = this.chatData.avatarUrl;
+        // обновляем автар если данные изменились
+        if (avatar && this.chatData) {
+            avatar.src = this.chatData.avatarUrl || 'assets/placeholder.png';
+        }
         if (name) name.textContent = this.chatData.name;
         
         // Обновляем статус через UserService

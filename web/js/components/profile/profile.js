@@ -26,12 +26,22 @@ class Profile {
         this.previousComponent = data?.from || 'chats-list'; 
         
         await this.loadUserData(userId);
+
+        this.setProfileAvatar()
+
         this.render();
         this.setupEvents();
         
         // Подписываемся на обновления статуса пользователя
         if (!this.isOwnProfile) {
             this.subscribeToUserUpdates();
+        }
+    }
+    
+    setProfileAvatar() {
+        const avatar = this.container.querySelector('.profile-avatar');
+        if (avatar && this.userData) {
+            avatar.src = this.userData.avatarUrl || 'assets/placeholder.png';
         }
     }
 
@@ -56,6 +66,9 @@ class Profile {
         console.log(`[${this.instanceId}] Profile: render() isOwn=${this.isOwnProfile}`);
        
         if (this.userData) {
+
+            this.setProfileAvatar();
+
             this.renderer.render(this.userData, this.container, this.isOwnProfile);
             
             // Показываем контакты только для своего профиля

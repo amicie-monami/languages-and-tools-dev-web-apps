@@ -29,7 +29,6 @@ class ChatsListRenderer {
         const mutedIcon = chat.isMuted ? '<span class="muted-icon">🔇</span>' : '';
         
         const messageStatus = this.getMessageStatus(chat.lastMessage);
-        // Получаем статус через UserService
         const onlineIndicator = userService ? this.getOnlineIndicator(chat, userService) : '';
                 
         li.innerHTML = `
