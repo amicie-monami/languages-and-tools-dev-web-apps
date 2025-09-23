@@ -2,8 +2,14 @@
 class App {
     constructor() {
         console.log("app.constructor")
-        this.apiManager = new ApiManager();
+        
+        // Проверяем авторизацию перед инициализацией
+        if (!this.checkAuth()) {
+            this.redirectToAuth();
+            return;
+        }
 
+        this.apiManager = new ApiManager();
         this.eventBus = new EventBus();
         this.apiService = this.apiManager.createApiService();
         this.userService = new UserService(this.apiService, this.eventBus);
@@ -24,6 +30,72 @@ class App {
         );
 
         this.setupCommunication();
+        this.setupLogout();
+    }
+
+    // Проверка авторизации
+    checkAuth() {
+        try {
+            const sessionData = localStorage.getItem('messenger_session');
+            if (!sessionData) return false;
+
+            const session = JSON.parse(sessionData);
+            
+            // Проверяем не истекла ли сессия
+            if (session.expiresAt && session.expiresAt < Date.now()) {
+                this.clearAuth();
+                return false;
+            }
+
+            // Устанавливаем текущего пользователя
+            this.currentUser = session.user;
+            console.log('Найдена активная сессия для:', this.currentUser.username);
+            return true;
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            this.clearAuth();
+            return false;
+        }
+    }
+
+    // Очистка данных авторизации
+    clearAuth() {
+        try {
+            localStorage.removeItem('messenger_session');
+            localStorage.removeItem('messenger_token');
+        } catch (error) {
+            console.error('Error clearing auth:', error);
+        }
+    }
+
+    // Перенаправление на страницу авторизации
+    redirectToAuth() {
+        console.log('Redirecting to auth page');
+        window.location.href = 'auth.html';
+    }
+
+    // Настройка обработчика выхода
+    setupLogout() {
+        // Обработчик для выхода (Ctrl+L или Cmd+L)
+        document.addEventListener('keydown', (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+                event.preventDefault();
+                this.logout();
+            }
+        });
+    }
+
+    // Выход из системы
+    logout() {
+        if (confirm('Выйти из аккаунта?')) {
+            this.clearAuth();
+            this.redirectToAuth();
+        }
+    }
+
+    // Получение текущего пользователя
+    getCurrentUser() {
+        return this.currentUser;
     }
 
     async init() {

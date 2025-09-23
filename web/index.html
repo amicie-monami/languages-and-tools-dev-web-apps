@@ -25,6 +25,9 @@
     <script src="js/storage/api/local.js"></script>
     <script src="js/storage/api/http.js"></script>
     <script src="js/storage/api/factory.js"></script>
+
+    <script src="js/auth/auth-storage.js"></script>
+   <script src="js/auth/auth-guard.js"></script>
     
     <script src="js/storage/user-service.js"></script>
     <script src="js/storage/message-service.js"></script>
@@ -63,8 +66,10 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            window.app = new App();
-            window.app.init();
+            window.authGuard.requireAuth(() => {
+                window.app = new App();
+                window.app.init();
+            });
         });
     </script>
 </body>
