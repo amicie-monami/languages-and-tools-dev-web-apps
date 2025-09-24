@@ -6,7 +6,7 @@ class ChatDataLoader {
 
     async getMessages(chatId, offset = 0, limit = 50) {
         try {
-            return await this.apiService.getMessages(chatId, offset, limit);
+            return this.apiService.getMessages(chatId, offset, limit);
         } catch (error) {
             console.error('Error loading messages:', error);
             return [];
@@ -91,6 +91,15 @@ class MessageSender {
 
 // Обновленный ChatRenderer
 class ChatRenderer {
+    constructor(currentUserId = null) {
+        this.currentUserId = currentUserId;
+    }
+
+    // Метод для установки ID текущего пользователя
+    setCurrentUserId(userId) {
+        this.currentUserId = userId;
+    }
+
     renderMessages(messages, container) {
         const messagesList = container.querySelector('#messages-list');
         if (!messagesList) {
@@ -175,7 +184,13 @@ class ChatRenderer {
 
     createMessageElement(message) {
         const div = document.createElement('div');
-        const isOutgoing = message.senderId === 1;
+        
+        // ИСПРАВЛЕНО: Правильное определение исходящих сообщений
+        const isOutgoing = this.currentUserId ? 
+            message.senderId === this.currentUserId : 
+            false; 
+        
+        console.log(`Message from ${message.senderId}, current user: ${this.currentUserId}, isOutgoing: ${isOutgoing}`);
         
         div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
         div.dataset.messageId = message.id;
@@ -205,7 +220,14 @@ class ChatRenderer {
         return div;
     }
 
+    // Исправленный метод formatMessageText в ChatRenderer (data-loader.js)
     formatMessageText(text) {
+        // Проверяем что text не undefined/null и является строкой
+        if (!text || typeof text !== 'string') {
+            console.warn('formatMessageText received invalid text:', text);
+            return '';
+        }
+        
         // Простая обработка ссылок и переносов строк
         return text
             .replace(/\n/g, '<br>')

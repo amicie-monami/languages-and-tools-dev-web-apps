@@ -21,6 +21,7 @@ class ProfileRenderer {
         const headerActions = container.querySelector('.header-actions');
         if (headerActions) {
             const editButton = document.createElement('button');
+            editButton.type = 'button';  // ВАЖНО!
             editButton.className = 'edit-profile-button';
             editButton.innerHTML = '✏️';
             editButton.title = 'Редактировать профиль';
@@ -28,29 +29,86 @@ class ProfileRenderer {
         }
     }
 
-    async addUserActions(userData, container) {
-        const actionsSection = container.querySelector('.profile-actions');
-        if (!actionsSection) return;
+// Исправленный ProfileRenderer - добавляем обработчик ПОСЛЕ создания кнопки
+async addUserActions(userData, container) {
+    const actionsSection = container.querySelector('.profile-actions');
+    if (!actionsSection) return;
 
-        actionsSection.innerHTML = `
-            <button class="message-user-button">
-                Написать сообщение
-            </button>
-            <button class="contact-action-button" id="contact-action-button">
-                Загрузка...
-            </button>
-        `;
+    actionsSection.innerHTML = `
+        <button type="button" class="message-user-button">
+            Написать сообщение
+        </button>
+        <button type="button" class="contact-action-button" id="contact-action-button">
+            Загрузка...
+        </button>
+    `;
 
-        // Проверяем статус контакта и обновляем кнопку
-        await this.updateContactButton(container, userData.id);
-        
-        actionsSection.style.display = 'block';
+    // Проверяем статус контакта и обновляем кнопку
+    await this.updateContactButton(container, userData.id);
+    
+    actionsSection.style.display = 'block';
+
+    // КРИТИЧЕСКИ ВАЖНО: Добавляем обработчики ПОСЛЕ создания кнопок!
+    this.attachActionButtonHandlers(container);
+}
+
+    // Новый метод для добавления обработчиков к кнопкам действий
+    attachActionButtonHandlers(container) {
+        const messageButton = container.querySelector('.message-user-button');
+        const contactButton = container.querySelector('#contact-action-button');
+
+        // Удаляем старые обработчики если есть
+        if (messageButton && this.boundMessageHandler) {
+            messageButton.removeEventListener('click', this.boundMessageHandler);
+        }
+        if (contactButton && this.boundContactHandler) {
+            contactButton.removeEventListener('click', this.boundContactHandler);
+        }
+
+        // Создаем новые bound функции
+        this.boundMessageHandler = (e) => {
+            console.log('Profile: message button clicked');
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            // Вызываем обработчик из Profile компонента
+            if (this.onMessageClick) {
+                this.onMessageClick(e);
+            }
+        };
+
+        this.boundContactHandler = (e) => {
+            console.log('Profile: contact action clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            // Вызываем обработчик из Profile компонента
+            if (this.onContactAction) {
+                this.onContactAction(e);
+            }
+        };
+
+        // Добавляем новые обработчики
+        if (messageButton) {
+            messageButton.addEventListener('click', this.boundMessageHandler);
+        }
+        if (contactButton) {
+            contactButton.addEventListener('click', this.boundContactHandler);
+        }
+    }
+
+    // Добавляем методы для установки callback'ов
+    setMessageClickHandler(handler) {
+        this.onMessageClick = handler;
+    }
+
+    setContactActionHandler(handler) {
+        this.onContactAction = handler;
     }
 
     addLogoutButton(container) {
         const headerActions = container.querySelector('.header-actions');
         if (headerActions) {
             const logoutButton = document.createElement('button');
+            logoutButton.type = 'button';  // ВАЖНО!
             logoutButton.className = 'logout-button';
             logoutButton.innerHTML = '🚪';
             logoutButton.title = 'Выйти из аккаунта';
@@ -74,16 +132,18 @@ class ProfileRenderer {
             
             const headerActions = container.querySelector('.header-actions');
             if (headerActions) {
+                // ИСПРАВЛЕНО: Добавляем type="button"!
                 headerActions.innerHTML = `
-                    <button class="edit-profile-button" title="Редактировать профиль">⚙️</button>
+                    <button type="button" class="edit-profile-button" title="Редактировать профиль">⚙️</button>
                 `;
             }
         } else {
             if (actionsContainer) {
                 actionsContainer.style.display = 'block';
+                // ИСПРАВЛЕНО: Добавляем type="button" к каждой кнопке!
                 actionsContainer.innerHTML = `
-                    <button class="message-user-button">Написать сообщение</button>
-                    <button class="contact-action-button" id="contact-action-button">
+                    <button type="button" class="message-user-button">Написать сообщение</button>
+                    <button type="button" class="contact-action-button" id="contact-action-button">
                         Проверяем...
                     </button>
                 `;
@@ -123,13 +183,20 @@ class ProfileRenderer {
         // Пока оставляем пустым
     }
 
-
     async updateContactButton(container, userId) {
         const contactButton = container.querySelector('#contact-action-button');
-        if (!contactButton) return;
+        if (!contactButton) {
+            console.log('Contact button not found');
+            return;
+        }
+
+        console.log('Checking contact status for user:', userId);
+        contactButton.disabled = true;
+        contactButton.textContent = 'Проверяем...';
 
         try {
             const isContact = await this.apiService.isContact(userId);
+            console.log(`User ${userId} is contact:`, isContact);
             
             contactButton.disabled = false;
             
@@ -142,8 +209,15 @@ class ProfileRenderer {
             }
         } catch (error) {
             console.error('Error checking contact status:', error);
-            contactButton.textContent = 'Ошибка';
+            contactButton.textContent = 'Ошибка проверки';
             contactButton.disabled = true;
+            
+            // Через 3 секунды попробовать еще раз
+            setTimeout(() => {
+                if (contactButton.textContent === 'Ошибка проверки') {
+                    this.updateContactButton(container, userId);
+                }
+            }, 3000);
         }
     }
 
@@ -174,4 +248,3 @@ class ProfileRenderer {
         }
     }
 }
-

@@ -29,6 +29,8 @@ class App {
             this.userService
         );
 
+        this.websocketClient = null;
+
         this.setupCommunication();
         this.setupLogout();
     }
@@ -107,6 +109,17 @@ class App {
         this.leftPanel.loadComponent('chats-list');
         
         this.simulateUserStatusUpdates();
+        this.initWebSocket();
+    }
+
+    // Добавьте новый метод для инициализации WebSocket:
+    async initWebSocket() {
+        this.websocketClient = new WebSocketClient(this.apiService, this.eventBus);
+        
+        const connected = await this.websocketClient.connect();
+        if (!connected) {
+            console.warn('Failed to connect to WebSocket, will retry automatically');
+        }
     }
 
     // handles global navigation events from data attributes 
@@ -123,6 +136,27 @@ class App {
                 }
             }
         });
+
+        document.addEventListener('submit', (event) => {
+            // Предотвращаем отправку всех форм, кроме форм авторизации
+            if (!event.target.classList.contains('auth-form')) {
+                console.log('Prevented form submission:', event.target);
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+        
+        // Защита от случайных нажатий Enter
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+                const isInMessageInput = event.target.classList.contains('message-input');
+                const isInAuthForm = event.target.closest('.auth-form');
+                
+                if (!isInMessageInput && !isInAuthForm) {
+                    event.preventDefault();
+                }
+            }
+        });
     }
 
     // establishes cross-panel communication through event subscriptions
@@ -131,14 +165,14 @@ class App {
             this.rightPanel.loadComponent('chat', chatData);
         });
 
-        this.eventBus.on('message-received', (data) => {
-            if (!data.isActiveChat) { // Обновляем список только если чат не активен
-                const currentComponent = this.leftPanel.getCurrentComponent();
-                if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
-                    currentComponent.updateSingleChat(data.chatId, data.message);
-                }
-            }
-        });
+        // this.eventBus.on('message-received', (data) => {
+        //     if (!data.isActiveChat) { // Обновляем список только если чат не активен
+        //         const currentComponent = this.leftPanel.getCurrentComponent();
+        //         if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+        //             currentComponent.updateSingleChat(data.chatId, data.message);
+        //         }
+        //     }
+        // });
 
         this.eventBus.on('message-sent', (data) => {
             console.log('Message sent, updating chat list');
@@ -188,6 +222,45 @@ class App {
                 this.rightPanel.showEmptyState();
             }
         });
+
+        // WebSocket обработчики
+        this.eventBus.on('websocket-connected', () => {
+            console.log('App: WebSocket connected');
+            // Можно показать индикатор подключения
+        });
+        
+        this.eventBus.on('websocket-disconnected', () => {
+            console.log('App: WebSocket disconnected');
+            // Можно показать индикатор отключения
+        });
+        
+        this.eventBus.on('websocket-new-message', (data) => {
+            console.log('App: New message via WebSocket');
+            
+            if (data.message.senderId === data.userId) {
+                console.log('------- Ignoring own message from WebSocket');
+                return; 
+            }
+
+            this.leftPanel.components['chats-list'].updateSingleChat(data.chatId, data.message)
+
+            if (this.rightPanel.currentComponent != null) {
+                this.rightPanel.components[this.rightPanel.currentComponentName].addNewMessage(data.message)
+            }
+        });
+        
+        this.eventBus.on('websocket-update-chats', () => {
+            // Обновляем список чатов
+            const currentComponent = this.leftPanel.getCurrentComponent();
+            if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+                currentComponent.refresh();
+            }
+        });
+        
+        this.eventBus.on('websocket-user-status', (data) => {
+            // Обновляем статус пользователя в UI
+            this.userService.updateUserStatus(data.userId, data.isOnline);
+        });
     }
 
     simulateUserStatusUpdates() {
@@ -201,27 +274,156 @@ class App {
         }, 10000); // каждые 10 секунд
     }
 
-    // manages chat creation logic with temporary state handling
+    // В методе findOrCreateChat добавить дополнительную проверку:
     async findOrCreateChat(userId, userName, userAvatar) {
-        const existingChat = window.mockDataService.chats.find(chat => chat.userId === userId);
-        
-        let chatData;
-        if (existingChat) {
-            chatData = existingChat;
-        } else {
-            // creates temporary chat session without persisting to main list
-            chatData = {
-                id: `temp_${userId}`,
-                userId: userId,
-                type: 'private',
-                name: userName,
-                avatarUrl: userAvatar,
-                isTemporary: true
-            };
+        try {
+            console.log('%c🎯 findOrCreateChat START', 'background: blue; color: white;', { userId, userName, userAvatar });
+            
+            // Получаем существующие чаты через API
+            const existingChats = await this.apiService.getChats();
+            console.log('📋 Existing chats:', existingChats);
+            
+            // Ищем существующий чат
+            const existingChat = existingChats.find(chat => {
+                return chat.type === 'private' && chat.userId === userId;
+            });
+            
+            let chatData;
+            if (existingChat) {
+                console.log('📞 Found existing chat:', existingChat);
+                chatData = existingChat;
+            } else {
+                console.log('➕ Creating new chat with user:', userId);
+                
+                try {
+                    chatData = await this.apiService.createChat({
+                        userId: userId,
+                        type: 'private',
+                        name: userName,
+                        avatarUrl: userAvatar
+                    });
+                    
+                    console.log('✅ Created new chat:', chatData);
+                    
+                } catch (createError) {
+                    console.error('💥 Error creating chat:', createError);
+                    throw createError;
+                }
+            }
+            
+            console.log('%c🎬 Loading chat in right panel', 'background: purple; color: white;', chatData);
+            
+            // Убеждаемся что правая панель чиста
+            this.rightPanel.clear && this.rightPanel.clear();
+            
+            // Загружаем чат
+            await this.rightPanel.loadComponent('chat', chatData);
+            
+            console.log('%c✅ Chat loaded successfully', 'background: green; color: white;');
+            
+        } catch (error) {
+            console.error('%c💥 Error in findOrCreateChat:', 'background: red; color: white;', error);
+            console.trace();
         }
-        
-        this.rightPanel.loadComponent('chat', chatData);
     }
+
+    // Исправить метод findOrCreateChat:
+    // async findOrCreateChat(userId, userName, userAvatar) {
+    //     try {
+    //         // Сначала проверяем существующие чаты
+    //         let existingChat = null;
+    //         const currentChats = await this.apiService.getChats();
+            
+    //         // Ищем существующий приватный чат с этим пользователем
+    //         for (const chat of currentChats) {
+    //             if (chat.type === 'private' && chat.userId === userId) {
+    //                 existingChat = chat;
+    //                 break;
+    //             }
+    //         }
+
+    //         let chatData;
+    //         if (existingChat) {
+    //             console.log('Found existing chat:', existingChat.id);
+    //             chatData = existingChat;
+    //         } else {
+    //             console.log('Creating new chat with user:', userId);
+    //             // Создаем новый чат
+    //             chatData = await this.apiService.createChat({
+    //                 userId: userId,
+    //                 type: 'private',
+    //                 name: userName,
+    //                 avatarUrl: userAvatar
+    //             });
+                
+    //             // Обновляем список чатов
+    //             const currentComponent = this.leftPanel.getCurrentComponent();
+    //             if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+    //                 currentComponent.refresh();
+    //             }
+    //         }
+
+    //         // ВАЖНО: Сначала очищаем правую панель
+    //         this.rightPanel.clear();
+            
+    //         // Затем загружаем чат
+    //         await this.rightPanel.loadComponent('chat', chatData);
+            
+    //         console.log('Chat opened successfully:', chatData.id);
+            
+    //     } catch (error) {
+    //         console.error('Error in findOrCreateChat:', error);
+    //         // Показываем уведомление пользователю
+    //         this.showErrorNotification('Не удалось открыть чат');
+    //     }
+    // }
+
+    // Добавить метод для показа уведомлений об ошибках:
+    showErrorNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'error-notification';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    // manages chat creation logic with temporary state handling
+    // async findOrCreateChat(userId, userName, userAvatar) {
+    //     const existingChat = window.mockDataService.chats.find(chat => chat.userId === userId);
+        
+    //     let chatData;
+    //     if (existingChat) {
+    //         chatData = existingChat;
+    //     } else {
+    //         // creates temporary chat session without persisting to main list
+    //         chatData = {
+    //             id: `temp_${userId}`,
+    //             userId: userId,
+    //             type: 'private',
+    //             name: userName,
+    //             avatarUrl: userAvatar,
+    //             isTemporary: true
+    //         };
+    //     }
+        
+    //     this.rightPanel.loadComponent('chat', chatData);
+    // }
 }
 
 class ApiManager {
@@ -241,9 +443,9 @@ class ApiManager {
         if (override) return override;
         
         // По hostname определяем окружение
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'local';
-        }
+        // if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        //     return 'local';
+        // }
         
         return 'http'; // По умолчанию HTTP API в продакшене
     }
@@ -263,11 +465,11 @@ class ApiManager {
         switch (window.location.hostname) {
             case 'localhost':
             case '127.0.0.1':
-                return 'http://localhost:3000/api';
+                return 'http://localhost:8000/api'; // ИСПРАВЛЕНО: добавлен /api
             case 'staging.messenger.com':
-                return 'https://api-staging.messenger.com';
+                return 'https://api-staging.messenger.com/api';
             default:
-                return 'https://api.messenger.com';
+                return 'https://api.messenger.com/api';
         }
     }
 }

@@ -12,6 +12,7 @@ class Chat {
         this.messages = [];
         this.isInitialized = false;
         this.unsubscribeFromUserUpdates = null;
+        this.currentUserId = null; 
     }
 
     async init(container, chatData) {
@@ -25,20 +26,113 @@ class Chat {
             return;
         }
 
+        // Получаем ID текущего пользователя
+        try {
+            const currentUser = await this.apiService.getCurrentUser();
+            this.currentUserId = currentUser.id;
+            
+            // Устанавливаем ID в renderer
+            this.renderer.setCurrentUserId(this.currentUserId);
+            
+            console.log('Current user ID set to:', this.currentUserId);
+        } catch (error) {
+            console.error('Failed to get current user:', error);
+        }
+
         this.setChatAvatar();
 
-        // Отмечаем чат как прочитанный через API
-        await this.apiService.markChatAsRead(chatData.id);
-
         // Загружаем пользователя чата через UserService
-        await this.userService.loadUsers([chatData.userId]);
+        if (chatData.userId) {
+            await this.userService.loadUsers([chatData.userId]);
+        }
 
         await this.loadMessages();
+
+        try {
+            if (chatData.id && chatData.id !== 'undefined') {
+                await this.apiService.markChatAsRead(chatData.id);
+            }
+        } catch (error) {
+            console.warn('Failed to mark chat as read:', error);
+        }
+
         this.render();
         this.setupEvents();
         this.subscribeToUserUpdates();
     }
 
+    addNewMessage(messageData) {
+        // Проверяем дубликаты
+        if (this.messages.find(msg => msg.id === messageData.id)) {
+            return;
+        }
+        
+        this.messages.push(messageData);
+        this.messages.sort((a, b) => new Date(a.time) - new Date(b.time));
+        
+        // Рендерим только новое сообщение, а не весь чат
+        this.renderNewMessage(messageData);
+        this.scrollToBottom();
+    }
+
+    renderNewMessage(messageData) {
+        const messagesContainer = this.container.querySelector('.messages-list');
+        const messageElement = this.createMessageElement(messageData);
+        messagesContainer.appendChild(messageElement);
+    }
+
+    createMessageElement(messageData) {
+        const div = document.createElement('div');
+        div.className = `message ${messageData.senderId === this.currentUserId ? 'outgoing' : 'incoming'}`;
+        div.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">${messageData.text}</div>
+                <div class="message-time">${this.formatTime(messageData.time)}</div>
+            </div>
+        `;
+        return div;
+    }
+
+    formatTime(date) {
+        return new Date(date).toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    scrollToBottom() {
+        setTimeout(() => {
+            const container = this.container.querySelector('.messages-list');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }, 10);
+    }
+
+    // Добавьте метод для звука уведомления (опционально):
+    playNotificationSound() {
+        try {
+            // Создаем простой звук уведомления
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+            // Игнорируем ошибки звука
+        }
+    }
+    
     setChatAvatar() {
         const avatar = this.container.querySelector('.chat-user-avatar');
         if (avatar && this.chatData) {
@@ -66,25 +160,35 @@ class Chat {
         const name = this.container.querySelector('.chat-user-name');
         const status = this.container.querySelector('.chat-user-status');
         
-        // обновляем автар если данные изменились
+        // Обновляем аватар
         if (avatar && this.chatData) {
             avatar.src = this.chatData.avatarUrl || 'assets/placeholder.png';
         }
-        if (name) name.textContent = this.chatData.name;
         
-        // Обновляем статус через UserService
-        if (status) {
-            const user = this.userService.getUser(this.chatData.userId);
-            const isOnline = this.userService.getUserStatus(this.chatData.userId);
-            
-            if (isOnline) {
-                status.textContent = 'В сети';
-                status.className = 'chat-user-status online';
-            } else if (user && user.lastSeen) {
-                status.textContent = this.formatLastSeen(user.lastSeen);
-                status.className = 'chat-user-status offline';
-            } else {
-                status.textContent = 'Был в сети давно';
+        // Обновляем имя - берем из chatData
+        if (name) {
+            name.textContent = this.chatData.name || 'Неизвестный пользователь';
+        }
+        
+        // Обновляем статус через UserService если userId есть
+        if (status && this.chatData.userId) {
+            try {
+                const user = this.userService.getUser(this.chatData.userId);
+                const isOnline = this.userService.getUserStatus(this.chatData.userId);
+                
+                if (isOnline) {
+                    status.textContent = 'В сети';
+                    status.className = 'chat-user-status online';
+                } else if (user && user.lastSeen) {
+                    status.textContent = this.formatLastSeen(user.lastSeen);
+                    status.className = 'chat-user-status offline';
+                } else {
+                    status.textContent = 'Был в сети давно';
+                    status.className = 'chat-user-status offline';
+                }
+            } catch (error) {
+                // Если UserService не может получить данные, показываем базовый статус
+                status.textContent = 'Офлайн';
                 status.className = 'chat-user-status offline';
             }
         }
@@ -121,39 +225,44 @@ class Chat {
     }
 
     setupEvents() {
-        if (this.isInitialized) {
-            this.removeEventListeners();
-        }
-
+        this.removeEventListeners();
+    
+        // Обработчики для аватара и имени пользователя
         const userAvatar = this.container.querySelector('.chat-user-avatar');
         const userName = this.container.querySelector('.chat-user-name');
         
-        // Клик по аватарке или имени для открытия профиля
         [userAvatar, userName].forEach(element => {
             if (element) {
                 element.style.cursor = 'pointer';
                 element.addEventListener('click', () => {
-                    console.log('Клик по пользователю в чате, chatData:', this.chatData);
                     this.eventBus.emit('user-profile-requested', {
                         userId: this.chatData.userId
                     });
                 });
             }
         });
-
+    
+        // Обработчики для отправки сообщений
         const sendButton = this.container.querySelector('#send-button');
         const messageInput = this.container.querySelector('#message-input');
         
-        this.sendMessageHandler = () => this.sendMessage();
+        // Единый обработчик отправки
+        this.sendMessageHandler = () => {
+            this.sendMessage();
+        };
+    
         this.keyPressHandler = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendMessage();
             }
         };
-        this.inputHandler = () => {
-            const text = messageInput.value.trim();
-            sendButton.disabled = text.length === 0;
+        
+        this.inputHandler = (e) => {
+            const text = e.target.value.trim();
+            if (sendButton) {
+                sendButton.disabled = text.length === 0;
+            }
         };
         
         if (sendButton) {
@@ -161,28 +270,37 @@ class Chat {
         }
         
         if (messageInput) {
-            messageInput.addEventListener('keypress', this.keyPressHandler);
+            messageInput.addEventListener('keydown', this.keyPressHandler);
             messageInput.addEventListener('input', this.inputHandler);
+            
+            // // Проверяем начальное состояние
+            // const initialText = messageInput.value.trim();
+            // if (sendButton) {
+            //     sendButton.disabled = initialText.length === 0;
+            // }
         }
         
-        // Слушаем новые сообщения
-        this.newMessageHandler = (event) => {
-            if (event.detail.chatId === this.chatData.id) {
-                this.messages.push(event.detail.message);
-                this.render();
-            }
-        };
-        
-        document.addEventListener('newMessage', this.newMessageHandler);
         this.isInitialized = true;
     }
 
     async sendMessage() {
+        console.log(`sendMessage: isSending = ${this.isSending}`, 'background: #222; color: #bada55');
+
+        if (this.isSending) {
+            console.log('Message sending already in progress, skipping');
+            return;
+        }
+
+        this.isSending = true;
+
         const messageInput = this.container.querySelector('#message-input');
         const sendButton = this.container.querySelector('#send-button');
         const text = messageInput.value.trim();
-        
-        if (!text) return;
+    
+        if (!text ) {
+            this.isSending = false;
+            return;
+        } 
 
         // Блокируем интерфейс во время отправки
         messageInput.disabled = true;
@@ -213,6 +331,7 @@ class Chat {
             this.showErrorMessage('Не удалось отправить сообщение');
         } finally {
             // Разблокируем интерфейс
+            this.isSending = false;
             messageInput.disabled = false;
             sendButton.disabled = false;
             sendButton.textContent = '➤';
@@ -280,32 +399,32 @@ class Chat {
     }
 
     removeEventListeners() {
-        if (this.sendMessageHandler) {
-            const sendButton = this.container?.querySelector('#send-button');
-            if (sendButton) {
-                sendButton.removeEventListener('click', this.sendMessageHandler);
-            }
+        const sendButton = this.container?.querySelector('#send-button');
+        const messageInput = this.container?.querySelector('#message-input');
+        
+        if (sendButton && this.sendMessageHandler) {
+            sendButton.removeEventListener('click', this.sendMessageHandler);
         }
         
-        if (this.keyPressHandler) {
-            const messageInput = this.container?.querySelector('#message-input');
-            if (messageInput) {
-                messageInput.removeEventListener('keypress', this.keyPressHandler);
+        if (messageInput) {
+            if (this.keyPressHandler) {
+                messageInput.removeEventListener('keydown', this.keyPressHandler);
+            }
+            if (this.inputHandler) {
                 messageInput.removeEventListener('input', this.inputHandler);
             }
         }
         
-        if (this.newMessageHandler) {
-            document.removeEventListener('newMessage', this.newMessageHandler);
-        }
-
         // Убираем обработчики с аватарки и имени
         const userAvatar = this.container?.querySelector('.chat-user-avatar');
         const userName = this.container?.querySelector('.chat-user-name');
+        
         [userAvatar, userName].forEach(element => {
             if (element) {
                 element.style.cursor = '';
-                element.replaceWith(element.cloneNode(true)); // Простой способ убрать все обработчики
+                // Более надежный способ удаления обработчиков
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
             }
         });
     }

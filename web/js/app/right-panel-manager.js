@@ -48,6 +48,34 @@ class RightPanelManager {
         this.container.innerHTML = html;
     }
 
+    // Добавить в RightPanelManager:
+    clear() {
+        console.log('RightPanelManager: Clearing panel');
+        
+        if (this.currentComponent && this.currentComponent.destroy) {
+            console.log(`RightPanelManager: Destroying component ${this.currentComponentName}`);
+            this.currentComponent.destroy();
+        }
+        
+        this.currentComponent = null;
+        this.currentComponentName = null;
+        
+        // Показать пустое состояние
+        this.container.innerHTML = `
+            <div class="empty-state" style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: #888;
+            ">
+                <h3>Выберите чат</h3>
+                <p>Выберите существующий чат или начните новый разговор</p>
+            </div>
+        `;
+    }
+
     // displays default state when no chat is selected
     showEmptyState() {
         this.container.innerHTML = `

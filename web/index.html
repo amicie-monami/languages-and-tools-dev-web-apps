@@ -13,6 +13,91 @@
     <link rel="stylesheet" href="css/profile-editor.css">
 </head>
 <body>
+    <script>
+        // ИСПРАВЛЕННЫЙ DEBUG КОД
+        (function() {
+            console.log('%c🔍 DEBUG: Page loaded', 'background: #222; color: #bada55');
+            
+            // Отслеживаем все submit события
+            document.addEventListener('submit', function(e) {
+                console.log('%c🚨 SUBMIT EVENT DETECTED!', 'background: red; color: white; font-size: 16px;');
+                console.log('Target:', e.target);
+                console.log('Form action:', e.target.action);
+                console.log('Form method:', e.target.method);
+                console.trace();
+                
+                // Всегда предотвращаем submit кроме auth форм
+                if (!e.target.classList.contains('auth-form')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('%c✋ Submit prevented', 'background: orange; color: white;');
+                }
+            }, true);
+            
+            // Отслеживание click событий на кнопках
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON') {
+                    console.log('%c🖱️ Button clicked:', 'background: blue; color: white;', {
+                        element: e.target,
+                        type: e.target.type,
+                        className: e.target.className,
+                        innerText: e.target.innerText,
+                        formElement: e.target.form
+                    });
+                }
+            }, true);
+            
+            // Отслеживание beforeunload и unload
+            window.addEventListener('beforeunload', function(e) {
+                console.log('%c🔄 BEFOREUNLOAD TRIGGERED!', 'background: red; color: yellow; font-size: 16px;');
+                console.trace();
+            });
+            
+            window.addEventListener('unload', function(e) {
+                console.log('%c🔄 UNLOAD TRIGGERED!', 'background: darkred; color: white; font-size: 16px;');
+            });
+            
+            // Отслеживаем navigation/history changes
+            const originalPushState = history.pushState;
+            const originalReplaceState = history.replaceState;
+            
+            history.pushState = function() {
+                console.log('%c📍 history.pushState:', 'background: purple; color: white;', arguments);
+                return originalPushState.apply(history, arguments);
+            };
+            
+            history.replaceState = function() {
+                console.log('%c📍 history.replaceState:', 'background: purple; color: white;', arguments);
+                return originalReplaceState.apply(history, arguments);
+            };
+            
+            // Отслеживаем window.location changes (но БЕЗ переопределения)
+            let currentHref = window.location.href;
+            setInterval(function() {
+                if (window.location.href !== currentHref) {
+                    console.log('%c🌍 Location changed:', 'background: red; color: white; font-size: 16px;', {
+                        from: currentHref,
+                        to: window.location.href
+                    });
+                    console.trace();
+                    currentHref = window.location.href;
+                }
+            }, 100);
+
+            // БЛОКИРУЕМ ВСЕ WEBSOCKET СОЕДИНЕНИЯ
+            // const originalWebSocket = window.WebSocket;
+            // window.WebSocket = function(url, protocols) {
+            //     console.log('🚫 WebSocket blocked:', url);
+            //     return {
+            //         addEventListener: () => {},
+            //         removeEventListener: () => {},
+            //         send: () => {},
+            //         close: () => {},
+            //         readyState: 3 // CLOSED
+            //     };
+            // };
+        })();
+    </script>
     <div class="main-container">
         <div class="left-container"></div>
         <div class="right-container"></div>
@@ -59,6 +144,8 @@
     <script src="js/components/chat/chat.js"></script>
     <script src="js/components/chat/data-loader.js"></script>
     
+    <!-- После других скриптов, перед app.js -->
+    <script src="js/websocket/client.js"></script>
     <!-- Главное приложение -->
     <script src="js/app/eventbus.js"></script>
     <script src="js/app/app.js"></script>

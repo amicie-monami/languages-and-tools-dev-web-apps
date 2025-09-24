@@ -163,19 +163,50 @@ class ChatsList {
 
     updateSingleChat(chatId, message) {
         console.log(`[${this.instanceId}] Updating single chat:`, chatId);
-        const chat = this.chats.find(c => c.id === chatId);
-        if (chat) {
+        
+        const chatIndex = this.chats.findIndex(c => c.id === chatId);
+        if (chatIndex !== -1) {
+            const chat = this.chats[chatIndex];
+            
+            // Обновляем последнее сообщение
             chat.lastMessage = {
                 text: message.text,
                 time: message.time,
                 senderId: message.senderId,
                 isRead: true
             };
-            // Перерисовываем только этот элемент
+            
+            // Перемещаем чат в начало массива (если не закреплен)
+            if (!chat.isPinned && chatIndex > 0) {
+                const updatedChat = this.chats.splice(chatIndex, 1)[0];
+                this.chats.unshift(updatedChat);
+            }
+            
+            // Перерисовываем элемент
             this.updateChatItemInDOM(chatId);
+            
+            // Перемещаем в DOM (если не закреплен)
+            if (!chat.isPinned) {
+                this.moveChatToTop(chatId);
+            }
+            
         } else {
             console.log(`[${this.instanceId}] Chat ${chatId} not found, refreshing list`);
             this.refresh();
+        }
+    }
+
+    // В класс ChatsList добавьте метод
+    moveChatToTop(chatId) {
+        const chatElement = this.container.querySelector(`[data-chat-id="${chatId}"]`);
+        const chatsList = this.container.querySelector('#chats-list ul');
+        
+        if (chatElement && chatsList && !chatElement.previousElementSibling?.classList?.contains('pinned')) {
+            // Если чат не закреплен и не первый среди незакрепленных, перемещаем его
+            const firstNonPinned = chatsList.querySelector('.chat-item:not(.pinned)');
+            if (firstNonPinned && firstNonPinned !== chatElement) {
+                chatsList.insertBefore(chatElement, firstNonPinned);
+            }
         }
     }
 

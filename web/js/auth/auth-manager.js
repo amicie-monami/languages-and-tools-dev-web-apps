@@ -1,10 +1,11 @@
-// js/auth/auth-manager.js
+// js/auth/auth-manager.js - Обновленный для работы с API
 class AuthManager {
     constructor() {
         this.validator = new AuthValidator();
         this.storage = new AuthStorage();
         this.currentUser = null;
         this.isAuthenticated = false;
+        this.apiBaseUrl = 'http://localhost:8000/api';
     }
 
     init() {
@@ -22,7 +23,7 @@ class AuthManager {
 
     checkExistingSession() {
         const savedSession = this.storage.getSession();
-        if (savedSession && savedSession.token && savedSession.expiresAt > Date.now()) {
+        if (savedSession && savedSession.access_token && savedSession.expiresAt > Date.now()) {
             this.currentUser = savedSession.user;
             this.isAuthenticated = true;
             console.log('Найдена активная сессия для:', this.currentUser.username);
@@ -94,19 +95,34 @@ class AuthManager {
         this.showLoading('Выполняется вход...');
 
         try {
-            // Имитация API запроса
-            await this.delay(1500);
-            
-            const loginResult = await this.attemptLogin(username, password);
-            
-            if (loginResult.success) {
-                this.handleLoginSuccess(loginResult.user);
-            } else {
-                this.showError(loginResult.error);
+            const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                const errorMessage = errorData?.detail || `HTTP ${response.status}: ${response.statusText}`;
+                throw new Error(errorMessage);
             }
+
+            const data = await response.json();
+            
+            if (!data.access_token) {
+                throw new Error('Токен не получен от сервера');
+            }
+
+            this.handleLoginSuccess(data);
+            
         } catch (error) {
-            this.showError('Ошибка подключения к серверу');
             console.error('Login error:', error);
+            this.showError(error.message || 'Ошибка подключения к серверу');
         } finally {
             this.hideLoading();
         }
@@ -132,112 +148,52 @@ class AuthManager {
         this.showLoading('Создание аккаунта...');
 
         try {
-            await this.delay(2000);
-            
-            const registerResult = await this.attemptRegister({
-                name, username, email, password
+            const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    name: name,
+                    bio: '', // Пустая биография по умолчанию
+                    password: password
+                })
             });
-            
-            if (registerResult.success) {
-                this.handleLoginSuccess(registerResult.user);
-            } else {
-                this.showError(registerResult.error);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                const errorMessage = errorData?.detail || `HTTP ${response.status}: ${response.statusText}`;
+                throw new Error(errorMessage);
             }
+
+            const userData = await response.json();
+            
+            // После успешной регистрации сразу логинимся
+            await this.handleLogin();
+            
         } catch (error) {
-            this.showError('Ошибка создания аккаунта');
             console.error('Registration error:', error);
+            this.showError(error.message || 'Ошибка создания аккаунта');
         } finally {
             this.hideLoading();
         }
     }
 
-    async attemptLogin(username, password) {
-        // Имитация проверки логина (в реальности - API запрос)
-        
-        // Демо-пользователи для тестирования
-        const demoUsers = [
-            {
-                id: 1,
-                name: 'Вы',
-                username: 'me',
-                email: 'me@example.com',
-                password: '123456',
-                avatarUrl: 'assets/me.png'
-            },
-            {
-                id: 2,
-                name: 'Анна Смирнова',
-                username: 'anna_s',
-                email: 'anna@example.com',
-                password: 'anna123',
-                avatarUrl: 'assets/anna.png'
-            }
-        ];
-
-        const user = demoUsers.find(u => 
-            (u.username === username || u.email === username) && u.password === password
-        );
-
-        if (user) {
-            return {
-                success: true,
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    username: user.username,
-                    email: user.email,
-                    avatarUrl: user.avatarUrl
-                }
-            };
-        } else {
-            return {
-                success: false,
-                error: 'Неверный логин или пароль'
-            };
-        }
-    }
-
-    async attemptRegister(userData) {
-        // Имитация регистрации (в реальности - API запрос)
-        
-        // Проверяем не занят ли username
-        const existingUsers = ['me', 'anna_s', 'max_dev', 'liza_k'];
-        if (existingUsers.includes(userData.username.toLowerCase())) {
-            return {
-                success: false,
-                error: 'Username уже занят'
-            };
-        }
-
-        // Создаем нового пользователя
-        const newUser = {
-            id: Date.now(),
-            name: userData.name,
-            username: userData.username,
-            email: userData.email,
-            avatarUrl: 'assets/placeholder.png',
-            bio: '',
-            isOnline: true
-        };
-
-        return {
-            success: true,
-            user: newUser
-        };
-    }
-
-    handleLoginSuccess(user) {
-        this.currentUser = user;
+    handleLoginSuccess(loginData) {
+        this.currentUser = loginData.user;
         this.isAuthenticated = true;
 
-        // Сохраняем сессию
+        // Сохраняем сессию в правильном формате для фронтенда
         this.storage.saveSession({
-            user: user,
-            token: this.generateToken(),
+            user: loginData.user,
+            access_token: loginData.access_token, // Правильное поле для API
+            token_type: loginData.token_type || 'bearer',
             expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 дней
         });
 
-        console.log('Успешная авторизация:', user.username);
+        console.log('Успешная авторизация:', this.currentUser.username);
         
         // Перенаправляем на главную страницу
         this.redirectToApp();
@@ -250,11 +206,6 @@ class AuthManager {
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 1000);
-    }
-
-    generateToken() {
-        // Простая генерация токена (в реальности должен приходить с сервера)
-        return 'token_' + Math.random().toString(36).substr(2) + Date.now();
     }
 
     showLoading(message = 'Загрузка...') {
@@ -360,10 +311,6 @@ class AuthManager {
         formGroup.classList.remove('error');
         const errorMsg = formGroup.querySelector('.error-message');
         if (errorMsg) errorMsg.remove();
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     // Публичные методы для использования в приложении

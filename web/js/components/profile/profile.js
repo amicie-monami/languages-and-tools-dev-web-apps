@@ -62,23 +62,23 @@ class Profile {
         }
     }
 
-    render() {
+    async render() {
         console.log(`[${this.instanceId}] Profile: render() isOwn=${this.isOwnProfile}`);
-       
-        if (this.userData) {
-
-            this.setProfileAvatar();
-
-            this.renderer.render(this.userData, this.container, this.isOwnProfile);
-            
-            // Показываем контакты только для своего профиля
-            if (this.isOwnProfile) {
-                this.loadAndRenderContacts();
-            } else {
-                // Для чужого профиля показываем актуальный статус
-                this.updateUserStatus();
-            }
+        
+        this.renderer.render(this.userData, this.container, this.isOwnProfile);
+        
+        // ВАЖНО: Устанавливаем обработчики ДЛЯ КНОПОК ПОСЛЕ их создания
+        if (!this.isOwnProfile) {
+            // Устанавливаем обработчики для кнопок действий
+            this.renderer.setMessageClickHandler((e) => this.openChatWithUser());
+            this.renderer.setContactActionHandler((e) => this.handleContactAction(e));
         }
+        
+        if (this.isOwnProfile) {
+            await this.loadAndRenderContacts();
+        }
+        
+        this.updateUserStatus();
     }
 
     // Обновляет статус пользователя в профиле
@@ -146,55 +146,49 @@ class Profile {
         this.boundHandlers = {
             backClick: (e) => {
                 console.log('Profile: back button clicked');
+                e.preventDefault(); // На всякий случай
                 e.stopPropagation();
                 window.app.leftPanel.goBack();
             },
             
-            editClick: () => {
+            editClick: (e) => {
                 console.log('Profile: edit button clicked');
+                e.preventDefault();
+                e.stopPropagation();
                 window.app.leftPanel.loadComponent('profile-editor');
-            },
-            
-            messageClick: () => {
-                console.log('Profile: message button clicked');
-                this.openChatWithUser();
-            },
-            
-            contactActionClick: async (e) => {
-                console.log('Profile: contact action clicked');
-                await this.handleContactAction(e);
             }
         };
-
+    
+        // Добавляем обработчики только для кнопок, которые точно существуют
         const backButton = this.container.querySelector('.back-button');
         if (backButton) {
             backButton.addEventListener('click', this.boundHandlers.backClick);
         }
-
+    
         if (this.isOwnProfile) {
             const editButton = this.container.querySelector('.edit-profile-button');
             if (editButton) {
                 editButton.addEventListener('click', this.boundHandlers.editClick);
             }
-        } else {
-            const messageButton = this.container.querySelector('.message-user-button');
-            if (messageButton) {
-                messageButton.addEventListener('click', this.boundHandlers.messageClick);
-            }
-            
-            const contactButton = this.container.querySelector('#contact-action-button');
-            if (contactButton) {
-                contactButton.addEventListener('click', this.boundHandlers.contactActionClick);
-            }
         }
+        
+        // НЕ добавляем обработчики для кнопок действий здесь - они добавляются в renderer.addUserActions()
     }
 
+    // Исправленный метод handleContactAction в Profile
     async handleContactAction(event) {
+        // ВАЖНО: Предотвращаем стандартное поведение
+        event.preventDefault();
+        event.stopPropagation();
+        
         const button = event.target;
         if (!button || button.disabled) return;
         
         const isRemove = button.classList.contains('remove-contact');
         const originalText = button.textContent;
+        const userId = this.userData.id;
+        
+        console.log(`${isRemove ? 'Removing' : 'Adding'} contact ${userId}`);
         
         // Блокируем кнопку и показываем процесс
         button.disabled = true;
@@ -202,39 +196,62 @@ class Profile {
         
         try {
             if (isRemove) {
-                await this.apiService.removeContact(this.userData.id);
+                await this.apiService.removeContact(userId);
+                console.log(`Successfully removed contact ${userId}`);
             } else {
-                await this.apiService.addContact(this.userData.id);
+                await this.apiService.addContact(userId);
+                console.log(`Successfully added contact ${userId}`);
             }
             
-            // Обновляем кнопку через рендерер
-            await this.renderer.updateContactButton(this.container, this.userData.id);
+            // Обновляем кнопку через рендерер (он сам проверит текущий статус)
+            await this.renderer.updateContactButton(this.container, userId);
             
             // Уведомляем об изменении контактов
             this.eventBus.emit('contacts-updated');
             
-            this.showSuccessMessage(isRemove ? 'Контакт удален' : 'Контакт добавлен');
+            // Показываем сообщение об успехе
+            this.showSuccessMessage(isRemove ? 
+                'Контакт удален' : 
+                'Контакт добавлен'
+            );
             
         } catch (error) {
-            console.error('Ошибка управления контактом:', error);
-            button.textContent = 'Ошибка';
-            this.showErrorMessage('Не удалось выполнить действие');
+            console.error('Error handling contact action:', error);
             
-            // Возвращаем исходный текст через 2 секунды
-            setTimeout(async () => {
-                await this.renderer.updateContactButton(this.container, this.userData.id);
-            }, 2000);
+            // Восстанавливаем кнопку
+            button.disabled = false;
+            button.textContent = originalText;
+            
+            // Показываем ошибку
+            this.showErrorMessage(isRemove ? 
+                'Не удалось удалить контакт' : 
+                'Не удалось добавить контакт'
+            );
         }
     }
 
-    openChatWithUser() {
+    // В методе openChatWithUser добавьте больше логов:
+    openChatWithUser(e) {
+        console.log('%c🎯 openChatWithUser called', 'background: green; color: white;');
+        
+        if (e) {
+            console.log('Event details:', e);
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Event prevented and stopped');
+        }
+        
+        console.log('Profile: Opening chat with user', this.userData.id);
+        
+        // Эмитим событие для создания/открытия чата
         this.eventBus.emit('open-chat-with-user', {
             userId: this.userData.id,
             userName: this.userData.name,
-            userAvatar: this.userData.avatarUrl // ИСПРАВЛЕНО: было avatar
+            userAvatar: this.userData.avatarUrl
         });
 
-        window.app.leftPanel.goBack();
+        // НЕ вызываем goBack сразу - пусть чат сначала загрузится
+        console.log('%c🎯 Chat opening initiated', 'background: green; color: white;');
     }
 
     showErrorMessage(message) {
@@ -307,5 +324,44 @@ class Profile {
         }
         
         this.boundHandlers = null;
+    }
+
+    showErrorMessage(message) {
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+        notification.className = 'profile-notification error';
+        notification.textContent = message;
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Анимация появления
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Удаление через 4 секунды
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
     }
 }

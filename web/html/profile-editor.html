@@ -1,11 +1,11 @@
 <div class="profile-edit-container">
     <div class="profile-edit-header">
-        <button class="back-button">←</button>
+        <button type="button" class="back-button">←</button>
         <h2>Настройки</h2>
-        <button class="save-button" disabled>S</button>
+        <button type="button" class="save-button" disabled>S</button>
     </div>
 
-    <form class="profile-edit-form">
+    <div class="profile-edit-form">
         <div class="avatar-section">
             <div class="avatar-upload">
                 <img class="avatar-preview" alt="Аватар">
@@ -16,17 +16,17 @@
         
         <div class="form-group">
             <label for="edit-name">Имя</label>
-            <input type="text" id="edit-name" maxlength="50" required placeholder="Ваше имя">
+            <input type="text" id="edit-name" maxlength="50" required placeholder="Ваше имя" autocomplete="off">
         </div>
         
         <div class="form-group username-group">
             <label for="edit-username">Username</label>
-            <input type="text" id="edit-username" maxlength="30" required placeholder="username">
+            <input type="text" id="edit-username" maxlength="30" required placeholder="username" autocomplete="off">
         </div>
         
         <div class="form-group">
             <label for="edit-bio">О себе</label>
             <textarea id="edit-bio" maxlength="100" rows="3" placeholder="Расскажите о себе"></textarea>
         </div>
-    </form>
+    </div>
 </div>

@@ -31,6 +31,10 @@ class ChatsListRenderer {
         const messageStatus = this.getMessageStatus(chat.lastMessage);
         const onlineIndicator = userService ? this.getOnlineIndicator(chat, userService) : '';
                 
+        console.log(`chat: ${JSON.stringify(chat)}`);
+
+        if(chat.avatarUrl === null) chat.avatarUrl = "assets/anna.png"
+
         li.innerHTML = `
             <div class="chat-avatar">
                 <img src="${chat.avatarUrl}" alt="${chat.name}">
@@ -74,14 +78,23 @@ class ChatsListRenderer {
         return '';
     }
 
-    // Улучшенное форматирование времени
     formatTime(date) {
+        // Ensure date is a Date object
+        if (!(date instanceof Date)) {
+            date = new Date(date);
+        }
+        
+        // Check if the conversion was successful
+        if (isNaN(date.getTime())) {
+            return 'недавно';
+        }
+        
         const now = new Date();
         const diff = now - date;
         const minutes = Math.floor(diff / (1000 * 60));
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
+    
         if (minutes < 1) {
             return 'сейчас';
         } else if (minutes < 60) {

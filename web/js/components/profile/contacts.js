@@ -69,6 +69,8 @@ class ContactsManager {
         
         if (messageBtn) {
             messageBtn.addEventListener('click', (e) => {
+                console.log('%c👤 Contact message button clicked', 'background: purple; color: white;');
+                e.preventDefault();
                 e.stopPropagation();
                 this.openChatWithContact(contact);
             });
@@ -97,3 +99,4 @@ class ContactsManager {
         }
     }
 }
+

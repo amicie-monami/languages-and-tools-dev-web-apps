@@ -14,7 +14,7 @@ class ApiServiceFactory {
 
 // Глобальный экземпляр API сервиса
 // Можно легко переключать между локальным и удаленным API
-window.apiService = ApiServiceFactory.create('local'); // или 'http'
+// window.apiService = ApiServiceFactory.create('local'); // или 'http'
 
 // Для переключения в рантайме:
 // window.apiService = ApiServiceFactory.create('http', { baseUrl: 'https://api.messenger.com' });
