@@ -3,9 +3,9 @@ class UserService {
     constructor(apiService, eventBus) {
         this.apiService = apiService;
         this.eventBus = eventBus;
-        this.users = new Map(); // userId -> user object
-        this.statusCache = new Map(); // userId -> online status
-        this.subscribers = new Set(); // компоненты, подписанные на обновления
+        this.users = new Map(); 
+        this.statusCache = new Map();
+        this.subscribers = new Set();
     }
 
     // Загружает пользователей по ID

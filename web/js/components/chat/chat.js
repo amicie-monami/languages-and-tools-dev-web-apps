@@ -1,6 +1,7 @@
 // Обновленный Chat компонент с dependency injection
 class Chat {
     constructor(eventBus, apiService, userService) {
+        console.log(`%c🔍 DEBUG: [Chat.constructor]}`, 'background: #222; color: #bada55');
         this.eventBus = eventBus;
         this.apiService = apiService;
         this.userService = userService;
@@ -16,6 +17,7 @@ class Chat {
     }
 
     async init(container, chatData) {
+        console.log(`%c🔍 DEBUG: [Chat.init]}`, 'background: #222; color: #bada55');
         this.container = container;
         this.chatData = chatData;
         
@@ -30,11 +32,8 @@ class Chat {
         try {
             const currentUser = await this.apiService.getCurrentUser();
             this.currentUserId = currentUser.id;
-            
             // Устанавливаем ID в renderer
             this.renderer.setCurrentUserId(this.currentUserId);
-            
-            console.log('Current user ID set to:', this.currentUserId);
         } catch (error) {
             console.error('Failed to get current user:', error);
         }
@@ -76,6 +75,7 @@ class Chat {
     }
 
     renderNewMessage(messageData) {
+        console.log(`%c🔍 DEBUG: [Chat.renderNewMessage]}`, 'background: #222; color: #bada55');
         const messagesContainer = this.container.querySelector('.messages-list');
         const messageElement = this.createMessageElement(messageData);
         messagesContainer.appendChild(messageElement);
@@ -150,6 +150,7 @@ class Chat {
     }
 
     render() {
+        console.log(`%c🔍 DEBUG: [Chat.render]}`, 'background: #222; color: #bada55');
         this.updateChatHeader();
         this.renderer.renderMessages(this.messages, this.container);
         this.scrollToBottom();
@@ -321,10 +322,10 @@ class Chat {
             messageInput.value = '';
             
             // Эмитим событие для обновления списка чатов
-            this.eventBus.emit('message-sent', {
-                chatId: targetChatId,
-                message: newMessage
-            });
+            // this.eventBus.emit('message-sent', {
+            //     chatId: targetChatId,
+            //     message: newMessage
+            // });
             
         } catch (error) {
             console.error('Ошибка отправки сообщения:', error);

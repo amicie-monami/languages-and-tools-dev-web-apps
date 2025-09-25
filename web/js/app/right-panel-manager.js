@@ -14,6 +14,7 @@ class RightPanelManager {
 
     // loads and initializes right panel components
     async loadComponent(componentName, data = null) {
+        console.log(`%c🔍 DEBUG: [RightPanel.loadComponent]. ${componentName}, ${JSON.stringify(data)}`, 'background: #222; color: #bada55');
         try {
             await this.loadHTML(componentName);
             

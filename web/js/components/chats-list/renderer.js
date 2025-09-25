@@ -31,7 +31,7 @@ class ChatsListRenderer {
         const messageStatus = this.getMessageStatus(chat.lastMessage);
         const onlineIndicator = userService ? this.getOnlineIndicator(chat, userService) : '';
                 
-        console.log(`chat: ${JSON.stringify(chat)}`);
+        console.log(`%c🔍 DEBUG: [ChatsList.createChatItem]: ${chat.id, chat.name}}`, 'background: #222; color: #bada55');
 
         if(chat.avatarUrl === null) chat.avatarUrl = "assets/anna.png"
 

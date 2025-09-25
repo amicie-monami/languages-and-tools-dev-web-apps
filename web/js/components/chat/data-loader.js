@@ -92,6 +92,7 @@ class MessageSender {
 // Обновленный ChatRenderer
 class ChatRenderer {
     constructor(currentUserId = null) {
+        console.log(`%c🔍 DEBUG: [ChatRenderer.constructor]}`, 'background: #222; color: #bada55');
         this.currentUserId = currentUserId;
     }
 
@@ -101,6 +102,7 @@ class ChatRenderer {
     }
 
     renderMessages(messages, container) {
+        console.log(`%c🔍 DEBUG: [ChatRenderer.renderMessages]}`, 'background: #222; color: #bada55');
         const messagesList = container.querySelector('#messages-list');
         if (!messagesList) {
             console.error('Элемент #messages-list не найден');
@@ -183,14 +185,13 @@ class ChatRenderer {
     }
 
     createMessageElement(message) {
+        console.log(`%c🔍 DEBUG: [ChatRenderer.createMessageElement]}`, 'background: #222; color: #bada55');
         const div = document.createElement('div');
         
         // ИСПРАВЛЕНО: Правильное определение исходящих сообщений
         const isOutgoing = this.currentUserId ? 
             message.senderId === this.currentUserId : 
             false; 
-        
-        console.log(`Message from ${message.senderId}, current user: ${this.currentUserId}, isOutgoing: ${isOutgoing}`);
         
         div.className = `message ${isOutgoing ? 'outgoing' : 'incoming'}`;
         div.dataset.messageId = message.id;

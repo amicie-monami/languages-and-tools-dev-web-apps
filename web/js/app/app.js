@@ -174,21 +174,21 @@ class App {
         //     }
         // });
 
-        this.eventBus.on('message-sent', (data) => {
-            console.log('Message sent, updating chat list');
+        // this.eventBus.on('message-sent', (data) => {
+        //     console.log('Message sent, updating chat list');
             
-            const currentComponent = this.leftPanel.getCurrentComponent();
-            if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
-                const chat = currentComponent.chats.find(c => c.id === data.chatId);
+        //     const currentComponent = this.leftPanel.getCurrentComponent();
+        //     if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+        //         const chat = currentComponent.chats.find(c => c.id === data.chatId);
                 
-                if (chat) {
-                    currentComponent.updateSingleChat(data.chatId, data.message);
-                } else {
-                    console.log('New chat created, refreshing chat list');
-                    currentComponent.refresh();
-                }
-            }
-        });
+        //         if (chat) {
+        //             currentComponent.updateSingleChat(data.chatId, data.message);
+        //         } else {
+        //             console.log('New chat created, refreshing chat list');
+        //             currentComponent.refresh();
+        //         }
+        //     }
+        // });
 
         this.eventBus.on('user-profile-requested', (data) => {
             this.leftPanel.loadComponent('profile', { userId: data.userId });
@@ -237,15 +237,30 @@ class App {
         this.eventBus.on('websocket-new-message', (data) => {
             console.log('App: New message via WebSocket');
             
-            if (data.message.senderId === data.userId) {
-                console.log('------- Ignoring own message from WebSocket');
-                return; 
+            // ДОБАВИТЬ: Игнорируем свои собственные сообщения
+            const currentUser = this.getCurrentUser();
+            const currentComponent = this.leftPanel.getCurrentComponent();
+
+            if (currentUser && data.message.senderId === currentUser.id) {
+                if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+                    currentComponent.updateSingleChat(data.chatId, data.message);
+                }
+                return;
             }
-
-            this.leftPanel.components['chats-list'].updateSingleChat(data.chatId, data.message)
-
-            if (this.rightPanel.currentComponent != null) {
-                this.rightPanel.components[this.rightPanel.currentComponentName].addNewMessage(data.message)
+            
+            // Обновляем список чатов
+            if (currentComponent && currentComponent.constructor.name === 'ChatsList') {
+                currentComponent.updateSingleChat(data.chatId, data.message);
+            }
+            
+            // Обновляем активный чат, если он совпадает
+            const currentChatComponent = this.rightPanel.getCurrentComponent();
+            if (currentChatComponent && 
+                currentChatComponent.constructor.name === 'Chat' && 
+                currentChatComponent.chatData && 
+                currentChatComponent.chatData.id === data.chatId) {
+                
+                currentChatComponent.addNewMessage(data.message);
             }
         });
         
